@@ -1,0 +1,41 @@
+<div class="app-container">
+  <!-- Menú superior -->
+  <nav class="navbar" *ngIf="rrhhService.isAuthenticated() && !isLoginPage()">
+    <div class="navbar-brand">
+      <h1>{{ title }}</h1>
+    </div>
+    <div class="navbar-menu">
+      <a *ngIf="tieneAcceso(Sistema.BODEGA)" routerLink="/bodega" routerLinkActive="active" class="nav-item">
+        <span class="icon">📦</span>
+        <span>Bodega</span>
+      </a>
+      <a *ngIf="tieneAcceso(Sistema.VENTAS)" routerLink="/ventas" routerLinkActive="active" class="nav-item">
+        <span class="icon">💰</span>
+        <span>Ventas</span>
+      </a>
+      <a *ngIf="tieneAcceso(Sistema.RECURSOS_HUMANOS)" routerLink="/recursos-humanos" routerLinkActive="active" class="nav-item">
+        <span class="icon">👥</span>
+        <span>Recursos Humanos</span>
+      </a>
+      <a *ngIf="tieneAcceso(Sistema.PROVEEDORES)" routerLink="/proveedores" routerLinkActive="active" class="nav-item">
+        <span class="icon">🚚</span>
+        <span>Proveedores</span>
+      </a>
+      <a *ngIf="tieneAcceso(Sistema.ENTREGAS)" routerLink="/entregas" routerLinkActive="active" class="nav-item">
+        <span class="icon">📋</span>
+        <span>Entregas</span>
+      </a>
+    </div>
+    <div class="navbar-actions">
+      <button (click)="logout()" class="btn-logout">
+        <span class="icon">🚪</span>
+        <span>Cerrar Sesión</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="main-content" [class.no-padding]="isLoginPage()">
+    <router-outlet></router-outlet>
+  </main>
+</div>

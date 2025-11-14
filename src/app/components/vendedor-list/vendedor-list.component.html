@@ -1,0 +1,189 @@
+<div class="rrhh-container">
+  <div class="module-header">
+    <h2>👥 Recursos Humanos</h2>
+    <p>Gestión de usuarios y permisos del sistema</p>
+  </div>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible">
+    {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <!-- Pestañas de navegación -->
+  <div class="tabs">
+    <button 
+      class="tab-btn" 
+      [class.active]="seccionActiva === 'usuarios'"
+      (click)="cambiarSeccion('usuarios')">
+      <span class="icon">👤</span>
+      Gestión de Usuarios
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="seccionActiva === 'permisos'"
+      (click)="cambiarSeccion('permisos')">
+      <span class="icon">🔐</span>
+      Gestión de Permisos
+    </button>
+  </div>
+
+  <!-- Sección: Gestión de Usuarios -->
+  <div *ngIf="seccionActiva === 'usuarios'" class="section">
+    <div class="section-header">
+      <h3>Usuarios del Sistema</h3>
+      <button class="btn btn-primary" (click)="toggleFormulario()">
+        <span class="icon">{{ mostrarFormulario ? '✖' : '➕' }}</span>
+        {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Usuario' }}
+      </button>
+    </div>
+
+    <!-- Formulario de nuevo usuario -->
+    <div *ngIf="mostrarFormulario" class="form-card">
+      <h4>Crear Nuevo Usuario</h4>
+      <form (ngSubmit)="crearUsuario()">
+        <div class="form-group">
+          <label>Nombre Completo</label>
+          <input 
+            type="text" 
+            class="form-control"
+            [(ngModel)]="nuevoUsuario.nombre"
+            name="nombre"
+            placeholder="Ej: Juan Pérez"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Usuario</label>
+          <input 
+            type="text" 
+            class="form-control"
+            [(ngModel)]="nuevoUsuario.usuario"
+            name="usuario"
+            placeholder="Ej: jperez"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input 
+            type="password" 
+            class="form-control"
+            [(ngModel)]="nuevoUsuario.password"
+            name="password"
+            placeholder="••••••••"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Permisos de Acceso</label>
+          <div class="permisos-grid">
+            <div 
+              *ngFor="let permiso of permisosDisponibles" 
+              class="permiso-item"
+              [class.selected]="tienePermiso(permiso)"
+              (click)="togglePermiso(permiso)">
+              <span class="check">{{ tienePermiso(permiso) ? '✓' : '' }}</span>
+              <span class="permiso-nombre">{{ getNombrePermiso(permiso) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-success">Crear Usuario</button>
+          <button type="button" class="btn btn-secondary" (click)="toggleFormulario()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lista de usuarios -->
+    <div class="usuarios-list">
+      <div *ngFor="let usuario of usuarios" class="usuario-card">
+        <div class="usuario-info">
+          <div class="usuario-avatar">{{ usuario.nombre.charAt(0).toUpperCase() }}</div>
+          <div class="usuario-detalles">
+            <h4>{{ usuario.nombre }}</h4>
+            <p class="usuario-username">{{ '@' + usuario.usuario }}</p>
+            <div class="permisos-badges">
+              <span *ngFor="let permiso of usuario.permisos" class="badge">
+                {{ getNombrePermiso(permiso) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="usuario-acciones">
+          <button 
+            class="btn btn-danger btn-sm"
+            (click)="eliminarUsuario(usuario.id)"
+            [disabled]="usuario.usuario === 'admin'">
+            <span class="icon">🗑️</span>
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección: Gestión de Permisos -->
+  <div *ngIf="seccionActiva === 'permisos'" class="section">
+    <div class="section-header">
+      <h3>Asignar Permisos a Usuarios</h3>
+    </div>
+
+    <!-- Selección de usuario -->
+    <div *ngIf="!usuarioSeleccionado" class="usuarios-seleccion">
+      <p>Seleccione un usuario para gestionar sus permisos:</p>
+      <div class="usuarios-grid">
+        <div 
+          *ngFor="let usuario of usuarios" 
+          class="usuario-card-small"
+          (click)="seleccionarUsuario(usuario)">
+          <div class="usuario-avatar-small">{{ usuario.nombre.charAt(0).toUpperCase() }}</div>
+          <div class="usuario-nombre">{{ usuario.nombre }}</div>
+          <div class="usuario-username-small">{{ '@' + usuario.usuario }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor de permisos -->
+    <div *ngIf="usuarioSeleccionado" class="permisos-editor">
+      <div class="editor-header">
+        <div class="usuario-seleccionado-info">
+          <div class="usuario-avatar">{{ usuarioSeleccionado.nombre.charAt(0).toUpperCase() }}</div>
+          <div>
+            <h4>{{ usuarioSeleccionado.nombre }}</h4>
+            <p>{{ '@' + usuarioSeleccionado.usuario }}</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary" (click)="cancelarEdicion()">Volver</button>
+      </div>
+
+      <div class="permisos-editor-content">
+        <h5>Módulos de Acceso</h5>
+        <div class="permisos-grid-large">
+          <div 
+            *ngFor="let permiso of permisosDisponibles" 
+            class="permiso-card"
+            [class.selected]="tienePermisoUsuario(permiso)"
+            (click)="togglePermisoUsuario(permiso)">
+            <div class="permiso-icono">{{ tienePermisoUsuario(permiso) ? '✓' : '✖' }}</div>
+            <div class="permiso-nombre-large">{{ getNombrePermiso(permiso) }}</div>
+            <div class="permiso-estado">
+              {{ tienePermisoUsuario(permiso) ? 'Permitido' : 'Denegado' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-success" (click)="guardarPermisos()">Guardar Cambios</button>
+          <button class="btn btn-secondary" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

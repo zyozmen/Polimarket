@@ -1,0 +1,28 @@
+.module-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.module-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.module-header h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+}
+
+.module-header p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.module-content {
+  color: #555;
+  font-size: 1rem;
+}
