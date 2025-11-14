@@ -23,7 +23,7 @@ Aplicación Angular para la gestión completa de operaciones empresariales, incl
 - **Consulta de inventario**: Visualización completa de productos
 - **Actualización de stock**: Entradas y salidas con registro de movimientos
 - **Alertas de stock bajo**: Notificaciones automáticas
-- **Solicitudes a proveedores**: Gestión de pedidos con estados
+- **Creación de solicitudes**: Genera solicitudes a proveedores cuando detecta productos con stock bajo
 - **Información detallada**: Código, nombre, descripción, categoría, proveedor, precio y stock
 
 ### 💰 Módulo de Ventas
@@ -41,6 +41,24 @@ Aplicación Angular para la gestión completa de operaciones empresariales, incl
   - Actualización automática de inventario
   - Conversión automática de clientes nuevos a regulares
 - **Historial de ventas**: Registro completo de transacciones
+
+### 🚚 Módulo de Proveedores
+- **Gestión de proveedores**: CRUD completo con información de contacto
+- **Activación/Desactivación**: Control del estado de proveedores
+- **Gestión completa de solicitudes**:
+  - Visualización de todas las solicitudes (creadas desde Bodega)
+  - Estados: Pendiente, Aprobada, Rechazada, Entregada
+  - Actualización automática de inventario al marcar como entregada
+  - Historial completo con filtros por estado y proveedor
+- **Alertas inteligentes**: Productos que necesitan reabastecimiento
+- **Información completa**: Nombre, contacto, teléfono, email, dirección, ciudad, categorías
+
+## 🔄 Flujo de Solicitudes de Stock
+
+1. **Bodega detecta stock bajo**: El sistema identifica automáticamente productos bajo el mínimo
+2. **Crear solicitud en Bodega**: El usuario puede crear una solicitud especificando producto, proveedor y cantidad
+3. **Gestionar en Proveedores**: Las solicitudes se gestionan completamente desde el módulo de Proveedores
+4. **Actualización automática**: Cuando se marca como "Entregada", el stock se actualiza automáticamente en el inventario
 
 ## 📋 Requisitos Previos
 
@@ -119,10 +137,11 @@ La aplicación funciona completamente en el frontend usando **localStorage** par
 - `permisos`: Lista de módulos accesibles por el usuario
 - `credenciales`: Usuarios creados dinámicamente
 - `usuarios`: Lista de usuarios del sistema
-- `productos`: Inventario de productos (compartido con Bodega)
+- `productos`: Inventario de productos (compartido entre Bodega, Ventas y Proveedores)
 - `clientes`: Base de datos de clientes
 - `ventas`: Historial de transacciones
-- `solicitudes`: Solicitudes a proveedores
+- `solicitudes`: Solicitudes a proveedores (gestionadas desde Proveedores)
+- `proveedores`: Lista de proveedores con información de contacto
 
 ## 🎯 Flujo de Trabajo Principal
 
@@ -144,7 +163,25 @@ La aplicación funciona completamente en el frontend usando **localStorage** par
 ### Gestión de Inventario
 1. **Consultar stock**: Vista general con filtros por categoría y búsqueda
 2. **Actualizar stock**: Entradas/salidas con razón del movimiento
-3. **Solicitar productos**: Crear solicitudes a proveedores cuando el stock es bajo
+3. **Solicitar stock**:
+   - Ver productos con stock bajo automáticamente
+   - Crear solicitudes a proveedores específicos
+   - Especificar cantidad, fecha estimada y observaciones
+   - Las solicitudes se envían al módulo de Proveedores para su gestión
+
+### Gestión de Proveedores
+1. **Ver proveedores**: Lista de proveedores activos e inactivos
+2. **Crear/Editar proveedor**: Información completa de contacto
+3. **Ver productos con stock bajo**: Identificación automática
+4. **Crear solicitud**:
+   - Seleccionar producto y proveedor
+   - Especificar cantidad y fecha estimada
+   - Agregar observaciones
+5. **Gestionar solicitudes**:
+   - Aprobar/Rechazar solicitudes pendientes
+   - Marcar como entregada (actualiza stock automáticamente)
+   - Filtrar por estado o proveedor
+   - Ver historial completo
 
 ## 🎨 Características de la UI
 
@@ -164,10 +201,10 @@ La aplicación funciona completamente en el frontend usando **localStorage** par
 ## 🔐 Sistema de Permisos
 
 ### Módulos del Sistema
-- **BODEGA**: Gestión de inventario
+- **BODEGA**: Gestión de inventario (consulta y actualización)
 - **VENTAS**: Procesamiento de ventas y clientes
 - **RECURSOS_HUMANOS**: Administración de usuarios
-- **PROVEEDORES**: Gestión de proveedores (próximamente)
+- **PROVEEDORES**: Gestión de proveedores y solicitudes de stock
 - **ENTREGAS**: Control de entregas (próximamente)
 
 ### Tipos de Usuario
@@ -217,7 +254,7 @@ ng test
 
 ## 🚀 Próximas Funcionalidades
 
-- [ ] Módulo de Proveedores completo
+- [x] Módulo de Proveedores completo con solicitudes de stock
 - [ ] Módulo de Entregas con tracking
 - [ ] Reportes y analytics de ventas
 - [ ] Exportación de datos a PDF/Excel

@@ -1,9 +1,358 @@
-<div class="module-container">
+<div class="proveedores-container">
   <div class="module-header">
     <h2>🚚 Módulo de Proveedores</h2>
-    <p>Gestión de proveedores y compras</p>
+    <p>Gestión de proveedores y solicitudes de stock</p>
   </div>
-  <div class="module-content">
-    <p>Contenido del módulo en desarrollo...</p>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <div *ngIf="mensaje" class="alert alert-success">
+    {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="tabs">
+    <button class="tab-btn" [class.active]="seccionActiva === 'solicitudes'" (click)="cambiarSeccion('solicitudes')">
+      <span class="icon">📋</span>
+      Solicitudes ({{ solicitudes.length }})
+    </button>
+    <button class="tab-btn" [class.active]="seccionActiva === 'crear-solicitud'" (click)="cambiarSeccion('crear-solicitud')">
+      <span class="icon">➕</span>
+      Nueva Solicitud
+    </button>
+    <button class="tab-btn" [class.active]="seccionActiva === 'proveedores'" (click)="cambiarSeccion('proveedores')">
+      <span class="icon">🏢</span>
+      Proveedores ({{ proveedores.length }})
+    </button>
+  </div>
+
+  <!-- Sección: Solicitudes -->
+  <div *ngIf="seccionActiva === 'solicitudes'">
+    <div class="section">
+      <div class="section-header">
+        <h3>Historial de Solicitudes</h3>
+        <button class="btn btn-primary" (click)="cambiarSeccion('crear-solicitud')">
+          <span class="icon">➕</span>
+          Nueva Solicitud
+        </button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros">
+        <input 
+          type="text" 
+          class="form-control"
+          [(ngModel)]="busquedaSolicitud"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por producto o proveedor...">
+        
+        <select class="form-control" [(ngModel)]="estadoFiltro" (ngModelChange)="aplicarFiltros()">
+          <option value="todos">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Aprobada">Aprobada</option>
+          <option value="Rechazada">Rechazada</option>
+          <option value="Entregada">Entregada</option>
+        </select>
+
+        <select class="form-control" [(ngModel)]="proveedorFiltro" (ngModelChange)="aplicarFiltros()">
+          <option value="todos">Todos los proveedores</option>
+          <option *ngFor="let prov of proveedores" [value]="prov.nombre">{{ prov.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Alertas de productos con stock bajo -->
+      <div *ngIf="getProductosStockBajo().length > 0" class="alert alert-warning">
+        <strong>⚠️ Productos con stock bajo:</strong> {{ getProductosStockBajo().length }} productos necesitan reabastecimiento
+      </div>
+
+      <!-- Lista de solicitudes -->
+      <div class="solicitudes-lista">
+        <div *ngFor="let solicitud of solicitudesFiltradas" class="solicitud-card">
+          <div class="solicitud-header">
+            <div class="solicitud-info">
+              <h4>{{ solicitud.producto }}</h4>
+              <span class="badge-estado" [ngClass]="getEstadoSolicitudClass(solicitud.estado)">
+                {{ solicitud.estado }}
+              </span>
+            </div>
+            <div class="solicitud-fecha">
+              <small>{{ formatearFecha(solicitud.fecha) }}</small>
+            </div>
+          </div>
+
+          <div class="solicitud-body">
+            <div class="solicitud-detalles">
+              <div class="detalle-item">
+                <span class="detalle-label">Proveedor:</span>
+                <span class="detalle-valor">{{ solicitud.proveedor }}</span>
+              </div>
+              <div class="detalle-item">
+                <span class="detalle-label">Cantidad:</span>
+                <span class="detalle-valor">{{ solicitud.cantidad }} unidades</span>
+              </div>
+              <div class="detalle-item" *ngIf="solicitud.fechaEstimada">
+                <span class="detalle-label">Fecha estimada:</span>
+                <span class="detalle-valor">{{ formatearFecha(solicitud.fechaEstimada) }}</span>
+              </div>
+              <div class="detalle-item" *ngIf="solicitud.observaciones">
+                <span class="detalle-label">Observaciones:</span>
+                <span class="detalle-valor">{{ solicitud.observaciones }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="solicitud-acciones" *ngIf="solicitud.estado !== 'Rechazada' && solicitud.estado !== 'Entregada'">
+            <button *ngIf="solicitud.estado === 'Pendiente'" 
+                    class="btn btn-success btn-sm" 
+                    (click)="cambiarEstadoSolicitud(solicitud, 'Aprobada')">
+              ✓ Aprobar
+            </button>
+            <button *ngIf="solicitud.estado === 'Aprobada'" 
+                    class="btn btn-primary btn-sm" 
+                    (click)="cambiarEstadoSolicitud(solicitud, 'Entregada')">
+              📦 Marcar como Entregada
+            </button>
+            <button class="btn btn-danger btn-sm" 
+                    (click)="cambiarEstadoSolicitud(solicitud, 'Rechazada')">
+              ✕ Rechazar
+            </button>
+            <button class="btn btn-secondary btn-sm" 
+                    (click)="eliminarSolicitud(solicitud.id)">
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="solicitudesFiltradas.length === 0" class="mensaje-vacio">
+          No hay solicitudes registradas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección: Crear Solicitud -->
+  <div *ngIf="seccionActiva === 'crear-solicitud'">
+    <div class="section">
+      <div class="section-header">
+        <h3>Nueva Solicitud de Stock</h3>
+      </div>
+
+      <div class="form-card">
+        <form (ngSubmit)="crearSolicitud()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Producto *</label>
+              <select [(ngModel)]="nuevaSolicitud.productoId" name="producto" class="form-control" required>
+                <option value="">Seleccione un producto</option>
+                <option *ngFor="let producto of productos" [value]="producto.id">
+                  {{ producto.nombre }} - Stock: {{ producto.stock }} / Min: {{ producto.stockMinimo }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Proveedor *</label>
+              <select [(ngModel)]="nuevaSolicitud.proveedorId" name="proveedor" class="form-control" required>
+                <option value="">Seleccione un proveedor</option>
+                <option *ngFor="let prov of proveedores" [value]="prov.id" [disabled]="!prov.activo">
+                  {{ prov.nombre }} {{ !prov.activo ? '(Inactivo)' : '' }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cantidad *</label>
+              <input type="number" 
+                     [(ngModel)]="nuevaSolicitud.cantidad" 
+                     name="cantidad"
+                     class="form-control" 
+                     min="1"
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label>Fecha Estimada de Entrega</label>
+              <input type="date" 
+                     [(ngModel)]="nuevaSolicitud.fechaEstimada" 
+                     name="fechaEstimada"
+                     class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Observaciones</label>
+            <textarea [(ngModel)]="nuevaSolicitud.observaciones" 
+                      name="observaciones"
+                      class="form-control" 
+                      rows="3"
+                      placeholder="Notas adicionales..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">Crear Solicitud</button>
+            <button type="button" class="btn btn-secondary" (click)="cambiarSeccion('solicitudes')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Productos con stock bajo -->
+      <div *ngIf="getProductosStockBajo().length > 0" class="productos-stock-bajo">
+        <h4>⚠️ Productos que necesitan reabastecimiento:</h4>
+        <div class="productos-lista">
+          <div *ngFor="let producto of getProductosStockBajo()" class="producto-item">
+            <span class="producto-nombre">{{ producto.nombre }}</span>
+            <span class="producto-stock">Stock: {{ producto.stock }} / {{ producto.stockMinimo }}</span>
+            <span class="producto-proveedor">{{ producto.proveedor }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección: Proveedores -->
+  <div *ngIf="seccionActiva === 'proveedores'">
+    <div class="section">
+      <div class="section-header">
+        <h3>Listado de Proveedores</h3>
+        <button class="btn btn-primary" (click)="abrirFormProveedor()">
+          <span class="icon">➕</span>
+          Nuevo Proveedor
+        </button>
+      </div>
+
+      <!-- Búsqueda -->
+      <div class="filtro-simple">
+        <input 
+          type="text" 
+          class="form-control"
+          [(ngModel)]="busquedaProveedor"
+          (ngModelChange)="aplicarFiltros()"
+          placeholder="Buscar por nombre o ciudad...">
+      </div>
+
+      <!-- Formulario de proveedor -->
+      <div *ngIf="mostrarFormProveedor" class="form-card">
+        <div class="form-card-header">
+          <h4>{{ proveedorSeleccionado ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h4>
+          <button class="btn-close-icon" (click)="cerrarFormularios()">✖</button>
+        </div>
+
+        <form (ngSubmit)="guardarProveedor()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre *</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoProveedor.nombre" 
+                     name="nombre"
+                     class="form-control" 
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label>Contacto *</label>
+              <input type="text" 
+                     [(ngModel)]="nuevoProveedor.contacto" 
+                     name="contacto"
+                     class="form-control" 
+                     required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="tel" 
+                     [(ngModel)]="nuevoProveedor.telefono" 
+                     name="telefono"
+                     class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" 
+                     [(ngModel)]="nuevoProveedor.email" 
+                     name="email"
+                     class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" 
+                   [(ngModel)]="nuevoProveedor.direccion" 
+                   name="direccion"
+                   class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label>Ciudad</label>
+            <input type="text" 
+                   [(ngModel)]="nuevoProveedor.ciudad" 
+                   name="ciudad"
+                   class="form-control">
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">Guardar Proveedor</button>
+            <button type="button" class="btn btn-secondary" (click)="cerrarFormularios()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Grid de proveedores -->
+      <div *ngIf="!mostrarFormProveedor" class="proveedores-grid">
+        <div *ngFor="let proveedor of proveedoresFiltrados" class="proveedor-card" [class.inactivo]="!proveedor.activo">
+          <div class="proveedor-header">
+            <h4>{{ proveedor.nombre }}</h4>
+            <span class="badge-estado" [class.activo]="proveedor.activo" [class.inactivo]="!proveedor.activo">
+              {{ proveedor.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+
+          <div class="proveedor-body">
+            <div class="detalle-item">
+              <span class="icon">👤</span>
+              <span>{{ proveedor.contacto }}</span>
+            </div>
+            <div class="detalle-item" *ngIf="proveedor.telefono">
+              <span class="icon">📱</span>
+              <span>{{ proveedor.telefono }}</span>
+            </div>
+            <div class="detalle-item" *ngIf="proveedor.email">
+              <span class="icon">📧</span>
+              <span>{{ proveedor.email }}</span>
+            </div>
+            <div class="detalle-item" *ngIf="proveedor.ciudad">
+              <span class="icon">📍</span>
+              <span>{{ proveedor.ciudad }}</span>
+            </div>
+          </div>
+
+          <div class="proveedor-acciones">
+            <button class="btn btn-sm btn-success" (click)="toggleEstadoProveedor(proveedor)">
+              {{ proveedor.activo ? '⏸️ Desactivar' : '▶️ Activar' }}
+            </button>
+            <button class="btn btn-sm btn-warning" (click)="abrirFormProveedor(proveedor)">
+              ✏️ Editar
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="eliminarProveedor(proveedor.id)">
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!mostrarFormProveedor && proveedoresFiltrados.length === 0" class="mensaje-vacio">
+        No se encontraron proveedores
+      </div>
+    </div>
   </div>
 </div>
+

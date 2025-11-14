@@ -35,8 +35,8 @@
       class="tab-btn" 
       [class.active]="seccionActiva === 'solicitudes'"
       (click)="cambiarSeccion('solicitudes')">
-      <span class="icon">📋</span>
-      Solicitudes a Proveedores
+      <span class="icon">📫</span>
+      Solicitar Stock
       <span *ngIf="getProductosStockBajo().length > 0" class="badge-alert">
         {{ getProductosStockBajo().length }}
       </span>
@@ -206,10 +206,10 @@
     </div>
   </div>
 
-  <!-- Sección: Solicitudes a Proveedores -->
+  <!-- Sección: Solicitar Stock -->
   <div *ngIf="seccionActiva === 'solicitudes'" class="section">
     <div class="section-header">
-      <h3>Solicitudes a Proveedores</h3>
+      <h3>Solicitar Stock a Proveedores</h3>
     </div>
 
     <!-- Alerta de productos con stock bajo -->
@@ -217,7 +217,7 @@
       <span class="icon">⚠️</span>
       <div>
         <strong>Atención: {{ getProductosStockBajo().length }} producto(s) con stock bajo</strong>
-        <p>Se recomienda realizar solicitudes de reabastecimiento</p>
+        <p>Puede crear solicitudes a proveedores para reabastecer estos productos</p>
       </div>
     </div>
 
@@ -231,16 +231,26 @@
           <div class="producto-info-small">
             <strong>{{ producto.nombre }}</strong>
             <div class="stock-detail">
-              <span>Stock: {{ producto.stock }} / Mínimo: {{ producto.stockMinimo }}</span>
+              <span class="stock-critico">Stock: {{ producto.stock }}</span>
+              <span> / Mínimo: {{ producto.stockMinimo }}</span>
             </div>
             <small>Proveedor: {{ producto.proveedor }}</small>
           </div>
           <button 
             class="btn btn-warning btn-sm"
             (click)="abrirFormSolicitud(producto)">
-            Solicitar
+            📫 Solicitar
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Mensaje si no hay productos con stock bajo -->
+    <div *ngIf="getProductosStockBajo().length === 0" class="mensaje-info">
+      <span class="icon">✅</span>
+      <div>
+        <strong>Todos los productos tienen stock suficiente</strong>
+        <p>No hay productos que requieran reabastecimiento en este momento</p>
       </div>
     </div>
 
@@ -262,17 +272,30 @@
         </div>
 
         <div class="form-group">
-          <label>Proveedor</label>
+          <label>Stock Actual / Mínimo</label>
           <input 
             type="text" 
             class="form-control"
-            [(ngModel)]="nuevaSolicitud.proveedor"
-            name="proveedor"
-            required>
+            [value]="productoSeleccionado.stock + ' / ' + productoSeleccionado.stockMinimo"
+            disabled>
         </div>
 
         <div class="form-group">
-          <label>Cantidad a Solicitar</label>
+          <label>Proveedor *</label>
+          <select 
+            class="form-control"
+            [(ngModel)]="nuevaSolicitud.proveedorId"
+            name="proveedor"
+            required>
+            <option value="">Seleccione un proveedor</option>
+            <option *ngFor="let prov of proveedores" [value]="prov.id" [disabled]="!prov.activo">
+              {{ prov.nombre }} {{ !prov.activo ? '(Inactivo)' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Cantidad a Solicitar *</label>
           <input 
             type="number" 
             class="form-control"
@@ -280,6 +303,15 @@
             name="cantidad"
             min="1"
             required>
+        </div>
+
+        <div class="form-group">
+          <label>Fecha Estimada de Entrega</label>
+          <input 
+            type="date" 
+            class="form-control"
+            [(ngModel)]="nuevaSolicitud.fechaEstimada"
+            name="fechaEstimada">
         </div>
 
         <div class="form-group">
@@ -292,60 +324,16 @@
             placeholder="Notas adicionales (opcional)"></textarea>
         </div>
 
+        <div class="mensaje-info-small">
+          <strong>💡 Nota:</strong> La solicitud se creará y podrá gestionarse desde el Módulo de Proveedores
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-success">Crear Solicitud</button>
           <button type="button" class="btn btn-secondary" (click)="cerrarFormularios()">Cancelar</button>
         </div>
       </form>
     </div>
-
-    <!-- Historial de solicitudes -->
-    <div class="solicitudes-historial">
-      <h4>Historial de Solicitudes</h4>
-      <div *ngIf="solicitudes.length === 0" class="mensaje-vacio">
-        No hay solicitudes registradas
-      </div>
-      <div *ngIf="solicitudes.length > 0" class="solicitudes-lista">
-        <div 
-          *ngFor="let solicitud of solicitudes" 
-          class="solicitud-card">
-          <div class="solicitud-info">
-            <div class="solicitud-header">
-              <strong>{{ solicitud.producto }}</strong>
-              <span class="badge-estado" [ngClass]="getEstadoSolicitudClass(solicitud.estado)">
-                {{ solicitud.estado }}
-              </span>
-            </div>
-            <div class="solicitud-detalles">
-              <span>Cantidad: {{ solicitud.cantidad }} unidades</span>
-              <span>Proveedor: {{ solicitud.proveedor }}</span>
-              <span>Fecha: {{ formatearFecha(solicitud.fecha) }}</span>
-            </div>
-            <p *ngIf="solicitud.observaciones" class="observaciones">
-              {{ solicitud.observaciones }}
-            </p>
-          </div>
-          <div class="solicitud-acciones" *ngIf="solicitud.estado === 'Pendiente'">
-            <button 
-              class="btn btn-success btn-sm"
-              (click)="cambiarEstadoSolicitud(solicitud, 'Aprobada')">
-              Aprobar
-            </button>
-            <button 
-              class="btn btn-danger btn-sm"
-              (click)="cambiarEstadoSolicitud(solicitud, 'Rechazada')">
-              Rechazar
-            </button>
-          </div>
-          <div class="solicitud-acciones" *ngIf="solicitud.estado === 'Aprobada'">
-            <button 
-              class="btn btn-primary btn-sm"
-              (click)="cambiarEstadoSolicitud(solicitud, 'Entregada')">
-              Marcar como Entregada
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
+
 </div>

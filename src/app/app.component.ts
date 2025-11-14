@@ -12,6 +12,7 @@ export class AppComponent implements OnInit {
   title = 'PoliMarket';
   permisos: Sistema[] = [];
   Sistema = Sistema; // Exponer enum al template
+  menuAbierto = false; // Control del menú responsive
 
   constructor(
     public rrhhService: RecursosHumanosService,
@@ -29,9 +30,18 @@ export class AppComponent implements OnInit {
     return this.permisos.includes(sistema);
   }
 
+  toggleMenu(): void {
+    this.menuAbierto = !this.menuAbierto;
+  }
+
+  cerrarMenu(): void {
+    this.menuAbierto = false;
+  }
+
   logout(): void {
     this.rrhhService.logout();
     this.router.navigate(['/login']);
+    this.cerrarMenu();
   }
 
   isLoginPage(): boolean {

@@ -16,10 +16,13 @@ interface SolicitudProveedor {
   id: string;
   fecha: Date;
   producto: string;
+  productoId: string;
   cantidad: number;
   proveedor: string;
+  proveedorId: string;
   estado: 'Pendiente' | 'Aprobada' | 'Rechazada' | 'Entregada';
   observaciones: string;
+  fechaEstimada?: string;
 }
 
 @Component({
@@ -32,8 +35,8 @@ export class BodegaComponent implements OnInit {
   
   // Datos
   productos: Producto[] = [];
-  solicitudes: SolicitudProveedor[] = [];
   productosFiltrados: Producto[] = [];
+  proveedores: any[] = [];
   
   // Búsqueda y filtros
   busqueda = '';
@@ -54,8 +57,9 @@ export class BodegaComponent implements OnInit {
   nuevaSolicitud = {
     productoId: '',
     cantidad: 0,
-    proveedor: '',
-    observaciones: ''
+    proveedorId: '',
+    observaciones: '',
+    fechaEstimada: ''
   };
   
   // UI
@@ -124,10 +128,10 @@ export class BodegaComponent implements OnInit {
       this.guardarProductos();
     }
     
-    // Cargar solicitudes
-    const solicitudesGuardadas = localStorage.getItem('solicitudes');
-    if (solicitudesGuardadas) {
-      this.solicitudes = JSON.parse(solicitudesGuardadas);
+    // Cargar proveedores
+    const proveedoresGuardados = localStorage.getItem('proveedores');
+    if (proveedoresGuardados) {
+      this.proveedores = JSON.parse(proveedoresGuardados);
     }
     
     this.actualizarCategorias();
@@ -136,10 +140,6 @@ export class BodegaComponent implements OnInit {
 
   guardarProductos(): void {
     localStorage.setItem('productos', JSON.stringify(this.productos));
-  }
-
-  guardarSolicitudes(): void {
-    localStorage.setItem('solicitudes', JSON.stringify(this.solicitudes));
   }
 
   actualizarCategorias(): void {
@@ -203,11 +203,16 @@ export class BodegaComponent implements OnInit {
   abrirFormSolicitud(producto: Producto): void {
     this.productoSeleccionado = { ...producto };
     this.mostrarFormSolicitud = true;
+    
+    // Buscar proveedor por nombre
+    const proveedor = this.proveedores.find(p => p.nombre === producto.proveedor);
+    
     this.nuevaSolicitud = {
       productoId: producto.id,
       cantidad: producto.stockMinimo - producto.stock > 0 ? producto.stockMinimo - producto.stock : 1,
-      proveedor: producto.proveedor,
-      observaciones: ''
+      proveedorId: proveedor?.id || '',
+      observaciones: '',
+      fechaEstimada: ''
     };
     this.limpiarMensajes();
   }
@@ -218,29 +223,35 @@ export class BodegaComponent implements OnInit {
       return;
     }
 
+    if (!this.nuevaSolicitud.proveedorId) {
+      this.error = 'Seleccione un proveedor';
+      return;
+    }
+
+    // Buscar información del proveedor
+    const proveedor = this.proveedores.find(p => p.id === this.nuevaSolicitud.proveedorId);
+    
     const solicitud: SolicitudProveedor = {
       id: Date.now().toString(),
       fecha: new Date(),
       producto: this.productoSeleccionado.nombre,
+      productoId: this.productoSeleccionado.id,
       cantidad: this.nuevaSolicitud.cantidad,
-      proveedor: this.nuevaSolicitud.proveedor,
+      proveedor: proveedor?.nombre || 'Sin proveedor',
+      proveedorId: this.nuevaSolicitud.proveedorId,
       estado: 'Pendiente',
-      observaciones: this.nuevaSolicitud.observaciones
+      observaciones: this.nuevaSolicitud.observaciones,
+      fechaEstimada: this.nuevaSolicitud.fechaEstimada
     };
 
-    this.solicitudes.unshift(solicitud);
-    this.guardarSolicitudes();
-    this.mensaje = 'Solicitud creada exitosamente';
+    // Guardar en localStorage (se gestiona desde Proveedores)
+    const solicitudesGuardadas = localStorage.getItem('solicitudes');
+    const solicitudes = solicitudesGuardadas ? JSON.parse(solicitudesGuardadas) : [];
+    solicitudes.unshift(solicitud);
+    localStorage.setItem('solicitudes', JSON.stringify(solicitudes));
+    
+    this.mensaje = 'Solicitud creada exitosamente. Puede gestionarla desde el módulo de Proveedores';
     this.cerrarFormularios();
-  }
-
-  cambiarEstadoSolicitud(solicitud: SolicitudProveedor, nuevoEstado: 'Aprobada' | 'Rechazada' | 'Entregada'): void {
-    const index = this.solicitudes.findIndex(s => s.id === solicitud.id);
-    if (index > -1) {
-      this.solicitudes[index].estado = nuevoEstado;
-      this.guardarSolicitudes();
-      this.mensaje = `Solicitud ${nuevoEstado.toLowerCase()}`;
-    }
   }
 
   getProductosStockBajo(): Producto[] {
@@ -251,16 +262,6 @@ export class BodegaComponent implements OnInit {
     if (producto.stock === 0) return 'stock-critico';
     if (producto.stock < producto.stockMinimo) return 'stock-bajo';
     return 'stock-normal';
-  }
-
-  getEstadoSolicitudClass(estado: string): string {
-    switch (estado) {
-      case 'Pendiente': return 'estado-pendiente';
-      case 'Aprobada': return 'estado-aprobada';
-      case 'Rechazada': return 'estado-rechazada';
-      case 'Entregada': return 'estado-entregada';
-      default: return '';
-    }
   }
 
   cerrarFormularios(): void {

@@ -4,30 +4,67 @@
     <div class="navbar-brand">
       <h1>{{ title }}</h1>
     </div>
-    <div class="navbar-menu">
-      <a *ngIf="tieneAcceso(Sistema.BODEGA)" routerLink="/bodega" routerLinkActive="active" class="nav-item">
+    
+    <!-- Botón hamburguesa para móvil -->
+    <button class="btn-hamburguesa" (click)="toggleMenu()" [class.active]="menuAbierto">
+      <span class="hamburguesa-linea"></span>
+      <span class="hamburguesa-linea"></span>
+      <span class="hamburguesa-linea"></span>
+    </button>
+
+    <!-- Menú de navegación -->
+    <div class="navbar-menu" [class.menu-abierto]="menuAbierto">
+      <a *ngIf="tieneAcceso(Sistema.BODEGA)" 
+         routerLink="/bodega" 
+         routerLinkActive="active" 
+         class="nav-item"
+         (click)="cerrarMenu()">
         <span class="icon">📦</span>
         <span>Bodega</span>
       </a>
-      <a *ngIf="tieneAcceso(Sistema.VENTAS)" routerLink="/ventas" routerLinkActive="active" class="nav-item">
+      <a *ngIf="tieneAcceso(Sistema.VENTAS)" 
+         routerLink="/ventas" 
+         routerLinkActive="active" 
+         class="nav-item"
+         (click)="cerrarMenu()">
         <span class="icon">💰</span>
         <span>Ventas</span>
       </a>
-      <a *ngIf="tieneAcceso(Sistema.RECURSOS_HUMANOS)" routerLink="/recursos-humanos" routerLinkActive="active" class="nav-item">
+      <a *ngIf="tieneAcceso(Sistema.RECURSOS_HUMANOS)" 
+         routerLink="/recursos-humanos" 
+         routerLinkActive="active" 
+         class="nav-item"
+         (click)="cerrarMenu()">
         <span class="icon">👥</span>
         <span>Recursos Humanos</span>
       </a>
-      <a *ngIf="tieneAcceso(Sistema.PROVEEDORES)" routerLink="/proveedores" routerLinkActive="active" class="nav-item">
+      <a *ngIf="tieneAcceso(Sistema.PROVEEDORES)" 
+         routerLink="/proveedores" 
+         routerLinkActive="active" 
+         class="nav-item"
+         (click)="cerrarMenu()">
         <span class="icon">🚚</span>
         <span>Proveedores</span>
       </a>
-      <a *ngIf="tieneAcceso(Sistema.ENTREGAS)" routerLink="/entregas" routerLinkActive="active" class="nav-item">
+      <a *ngIf="tieneAcceso(Sistema.ENTREGAS)" 
+         routerLink="/entregas" 
+         routerLinkActive="active" 
+         class="nav-item"
+         (click)="cerrarMenu()">
         <span class="icon">📋</span>
         <span>Entregas</span>
       </a>
+      
+      <!-- Botón logout dentro del menú en móvil -->
+      <button (click)="logout()" class="btn-logout btn-logout-mobile">
+        <span class="icon">🚪</span>
+        <span>Cerrar Sesión</span>
+      </button>
     </div>
+
+    <!-- Botón logout para desktop -->
     <div class="navbar-actions">
-      <button (click)="logout()" class="btn-logout">
+      <button (click)="logout()" class="btn-logout btn-logout-desktop">
         <span class="icon">🚪</span>
         <span>Cerrar Sesión</span>
       </button>
