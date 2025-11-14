@@ -58,8 +58,7 @@ export class BodegaComponent implements OnInit {
     productoId: '',
     cantidad: 0,
     proveedorId: '',
-    observaciones: '',
-    fechaEstimada: ''
+    observaciones: ''
   };
   
   // UI
@@ -211,8 +210,7 @@ export class BodegaComponent implements OnInit {
       productoId: producto.id,
       cantidad: producto.stockMinimo - producto.stock > 0 ? producto.stockMinimo - producto.stock : 1,
       proveedorId: proveedor?.id || '',
-      observaciones: '',
-      fechaEstimada: ''
+      observaciones: ''
     };
     this.limpiarMensajes();
   }
@@ -240,8 +238,7 @@ export class BodegaComponent implements OnInit {
       proveedor: proveedor?.nombre || 'Sin proveedor',
       proveedorId: this.nuevaSolicitud.proveedorId,
       estado: 'Pendiente',
-      observaciones: this.nuevaSolicitud.observaciones,
-      fechaEstimada: this.nuevaSolicitud.fechaEstimada
+      observaciones: this.nuevaSolicitud.observaciones
     };
 
     // Guardar en localStorage (se gestiona desde Proveedores)
