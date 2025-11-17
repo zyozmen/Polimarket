@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RecursosHumanosService } from '../../services/recursos-humanos.service';
+import { RrhhApiService } from '../../services/rrhh-api.service';
 import { Sistema } from '../../models/vendedor.model';
 
 interface Usuario {
@@ -38,8 +39,28 @@ export class VendedorListComponent implements OnInit {
   loading = false;
   error = '';
   mensaje = '';
+  
+  // Formulario para crear vendedor en API
+  mostrarFormVendedorApi = false;
+  nuevoVendedorApi = {
+    nombre: '',
+    apellido: '',
+    documento: '',
+    email: '',
+    codigo_vendedor: ''
+  };
 
-  constructor(private rrhhService: RecursosHumanosService) {}
+  // Resultado de consulta de vendedor
+  vendedorConsultado: any = null;
+  
+  // IDs para operaciones de API
+  vendedorIdConsulta: string = '';
+  vendedorIdAutorizar: string = '';
+
+  constructor(
+    private rrhhService: RecursosHumanosService,
+    private rrhhApiService: RrhhApiService
+  ) {}
 
   ngOnInit(): void {
     this.cargarUsuarios();
@@ -223,5 +244,143 @@ export class VendedorListComponent implements OnInit {
       [Sistema.ENTREGAS]: 'Entregas'
     };
     return nombres[permiso];
+  }
+
+  // ============= MÉTODOS PARA INTEGRACIÓN CON API RRHH =============
+
+  toggleFormVendedorApi(): void {
+    this.mostrarFormVendedorApi = !this.mostrarFormVendedorApi;
+    if (!this.mostrarFormVendedorApi) {
+      this.limpiarFormVendedorApi();
+    }
+  }
+
+  crearVendedorApi(): void {
+    this.limpiarMensajes();
+    
+    // Validaciones
+    if (!this.nuevoVendedorApi.nombre || !this.nuevoVendedorApi.apellido || 
+        !this.nuevoVendedorApi.documento || !this.nuevoVendedorApi.email || 
+        !this.nuevoVendedorApi.codigo_vendedor) {
+      this.error = 'Todos los campos son obligatorios';
+      return;
+    }
+
+    this.loading = true;
+
+    this.rrhhApiService.crearVendedor(this.nuevoVendedorApi).subscribe({
+      next: (response) => {
+        console.log('✅ Vendedor creado en API RRHH:', response);
+        this.mensaje = response.message || 'Vendedor creado exitosamente en el servidor';
+        this.limpiarFormVendedorApi();
+        this.mostrarFormVendedorApi = false;
+        this.loading = false;
+        
+        // Limpiar mensaje después de 5 segundos
+        setTimeout(() => this.mensaje = '', 5000);
+      },
+      error: (error) => {
+        console.error('❌ Error al crear vendedor en API:', error);
+        if (error.status === 500) {
+          this.error = 'Error al crear vendedor. Por favor, verifique los datos e intente nuevamente';
+        } else {
+          this.error = `Error al crear vendedor: ${error.message}`;
+        }
+        this.loading = false;
+      }
+    });
+  }
+
+  autorizarVendedorApi(): void {
+    this.limpiarMensajes();
+
+    // Si hay un vendedor consultado, usar su ID
+    const id = this.vendedorConsultado ? this.vendedorConsultado.id : parseInt(this.vendedorIdAutorizar);
+    
+    if (!id || isNaN(id)) {
+      this.error = 'ID inválido';
+      return;
+    }
+
+    this.loading = true;
+
+    this.rrhhApiService.autorizarVendedor(id).subscribe({
+      next: (response) => {
+        console.log('✅ Vendedor autorizado:', response);
+        if (response.autorizado) {
+          this.mensaje = `Vendedor #${id} autorizado exitosamente`;
+          this.vendedorIdAutorizar = '';
+          
+          // Actualizar el estado del vendedor consultado si existe
+          if (this.vendedorConsultado && this.vendedorConsultado.id === id) {
+            this.vendedorConsultado.estado_autorizacion = true;
+          }
+        } else {
+          this.error = `No se pudo autorizar al vendedor #${id}`;
+        }
+        this.loading = false;
+        setTimeout(() => this.limpiarMensajes(), 5000);
+      },
+      error: (error) => {
+        console.error('❌ Error al autorizar vendedor:', error);
+        if (error.status === 500) {
+          this.error = 'Vendedor no encontrado';
+        } else {
+          this.error = `Error: ${error.message}`;
+        }
+        this.loading = false;
+      }
+    });
+  }
+
+  consultarVendedorApi(): void {
+    this.limpiarMensajes();
+    this.vendedorConsultado = null;
+
+    if (!this.vendedorIdConsulta) {
+      this.error = 'Debe ingresar un ID de vendedor';
+      return;
+    }
+
+    const id = parseInt(this.vendedorIdConsulta);
+    if (isNaN(id)) {
+      this.error = 'ID inválido';
+      return;
+    }
+
+    this.loading = true;
+
+    this.rrhhApiService.obtenerVendedor(id).subscribe({
+      next: (vendedor) => {
+        console.log('✅ Vendedor obtenido:', vendedor);
+        this.vendedorConsultado = vendedor;
+        this.mensaje = 'Vendedor consultado exitosamente';
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error al consultar vendedor:', error);
+        if (error.status === 500) {
+          this.error = 'Vendedor no encontrado';
+        } else {
+          this.error = `Error: ${error.message}`;
+        }
+        this.loading = false;
+      }
+    });
+  }
+
+  cerrarResultadoConsulta(): void {
+    this.vendedorConsultado = null;
+    this.limpiarMensajes();
+  }
+
+  limpiarFormVendedorApi(): void {
+    this.nuevoVendedorApi = {
+      nombre: '',
+      apellido: '',
+      documento: '',
+      email: '',
+      codigo_vendedor: ''
+    };
   }
 }

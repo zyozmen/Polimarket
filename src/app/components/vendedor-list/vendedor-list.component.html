@@ -37,13 +37,206 @@
   <div *ngIf="seccionActiva === 'usuarios'" class="section">
     <div class="section-header">
       <h3>Usuarios del Sistema</h3>
-      <button class="btn btn-primary" (click)="toggleFormulario()">
-        <span class="icon">{{ mostrarFormulario ? '✖' : '➕' }}</span>
-        {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Usuario' }}
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" (click)="toggleFormulario()">
+          <span class="icon">{{ mostrarFormulario ? '✖' : '➕' }}</span>
+          {{ mostrarFormulario ? 'Cancelar' : 'Nuevo Usuario' }}
+        </button>
+        <button class="btn btn-success" (click)="toggleFormVendedorApi()">
+          <span class="icon">🌐</span>
+          {{ mostrarFormVendedorApi ? 'Cancelar' : 'Crear Vendedor (API)' }}
+        </button>
+      </div>
     </div>
 
-    <!-- Formulario de nuevo usuario -->
+    <!-- Sección para consultar y autorizar vendedores -->
+    <div class="api-actions-container">
+      <div class="api-action-card">
+        <h5>🔍 Consultar Vendedor</h5>
+        <p class="text-muted mb-2">Busca un vendedor por su ID</p>
+        <div class="input-group">
+          <input 
+            type="number" 
+            class="form-control"
+            [(ngModel)]="vendedorIdConsulta"
+            name="idConsulta"
+            placeholder="Ingrese ID del vendedor"
+            [disabled]="loading">
+          <button 
+            class="btn btn-info" 
+            (click)="consultarVendedorApi()" 
+            [disabled]="loading || !vendedorIdConsulta">
+            <span class="icon">🔍</span>
+            {{ loading ? 'Consultando...' : 'Consultar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultado de consulta de vendedor -->
+    <div *ngIf="vendedorConsultado" class="form-card bg-info-subtle">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>🔍 Información del Vendedor</h4>
+        <button class="btn btn-sm btn-secondary" (click)="cerrarResultadoConsulta()">
+          <span class="icon">✖</span>
+        </button>
+      </div>
+      
+      <div class="vendedor-detalle">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">ID:</label>
+              <p class="mb-0">{{ vendedorConsultado.id }}</p>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Código Vendedor:</label>
+              <p class="mb-0">{{ vendedorConsultado.codigo_vendedor }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Nombre:</label>
+              <p class="mb-0">{{ vendedorConsultado.nombre }}</p>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Apellido:</label>
+              <p class="mb-0">{{ vendedorConsultado.apellido }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Documento:</label>
+              <p class="mb-0">{{ vendedorConsultado.documento }}</p>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Email:</label>
+              <p class="mb-0">{{ vendedorConsultado.email }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Estado de Autorización:</label>
+              <p class="mb-0">
+                <span 
+                  class="badge"
+                  [class.bg-success]="vendedorConsultado.estado_autorizacion"
+                  [class.bg-warning]="!vendedorConsultado.estado_autorizacion">
+                  {{ vendedorConsultado.estado_autorizacion ? '✓ Autorizado' : '⏳ Pendiente' }}
+                </span>
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3" *ngIf="vendedorConsultado.fecha_creacion">
+            <div class="info-group">
+              <label class="fw-bold text-muted">Fecha de Creación:</label>
+              <p class="mb-0">{{ vendedorConsultado.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón de autorización -->
+        <div class="authorization-section">
+          <button 
+            class="btn btn-lg"
+            [class.btn-success]="!vendedorConsultado.estado_autorizacion"
+            [class.btn-secondary]="vendedorConsultado.estado_autorizacion"
+            (click)="autorizarVendedorApi()"
+            [disabled]="vendedorConsultado.estado_autorizacion || loading">
+            <span class="icon">{{ vendedorConsultado.estado_autorizacion ? '✓' : '✓' }}</span>
+            {{ vendedorConsultado.estado_autorizacion ? 'Ya está autorizado' : (loading ? 'Autorizando...' : 'Autorizar Vendedor') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario crear vendedor en API -->
+    <div *ngIf="mostrarFormVendedorApi" class="form-card bg-light">
+      <h4>🌐 Crear Vendedor en API RRHH</h4>
+      <p class="text-muted">Crea un vendedor en el servidor: https://akira.sedbaq.com.co/rrhh</p>
+      <form (ngSubmit)="crearVendedorApi()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              [(ngModel)]="nuevoVendedorApi.nombre"
+              name="nombre_api"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label>Apellido *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              [(ngModel)]="nuevoVendedorApi.apellido"
+              name="apellido_api"
+              required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Documento *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              [(ngModel)]="nuevoVendedorApi.documento"
+              name="documento_api"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label>Código Vendedor *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              [(ngModel)]="nuevoVendedorApi.codigo_vendedor"
+              name="codigo_api"
+              placeholder="Ej: V001"
+              required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email *</label>
+          <input 
+            type="email" 
+            class="form-control"
+            [(ngModel)]="nuevoVendedorApi.email"
+            name="email_api"
+            required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-success" [disabled]="loading">
+            {{ loading ? 'Creando...' : '✓ Crear Vendedor en API' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="toggleFormVendedorApi()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Formulario de nuevo usuario local -->
     <div *ngIf="mostrarFormulario" class="form-card">
       <h4>Crear Nuevo Usuario</h4>
       <form (ngSubmit)="crearUsuario()">

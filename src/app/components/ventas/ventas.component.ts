@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { SalesService } from '../../services/sales.service';
 
 interface Cliente {
   id: string;
@@ -93,11 +94,13 @@ export class VentasComponent implements OnInit {
   // UI
   mensaje = '';
   error = '';
+  cargandoVentas = false;
 
-  constructor() {}
+  constructor(private salesService: SalesService) {}
 
   ngOnInit(): void {
     this.cargarDatos();
+    this.cargarVentasDesdeBackend();
   }
 
   cargarDatos(): void {
@@ -160,14 +163,89 @@ export class VentasComponent implements OnInit {
       this.productos.forEach(p => p.cantidadAgregar = 1);
     }
     
-    // Cargar ventas
-    const ventasGuardadas = localStorage.getItem('ventas');
-    if (ventasGuardadas) {
-      this.ventas = JSON.parse(ventasGuardadas);
-    }
+    // Las ventas se cargan desde el backend en cargarVentasDesdeBackend()
     
     this.actualizarCategorias();
     this.aplicarFiltros();
+  }
+
+  /**
+   * Carga las ventas desde el backend REST
+   */
+  cargarVentasDesdeBackend(): void {
+    this.cargandoVentas = true;
+    this.error = '';
+    
+    this.salesService.getSales().subscribe({
+      next: (ventasBackend) => {
+        console.log('✅ Ventas cargadas desde el backend:', ventasBackend);
+        
+        // Mapear las ventas del backend al formato local
+        this.ventas = ventasBackend.map(venta => ({
+          id: venta.id?.toString() || '',
+          fecha: venta.date || '',
+          clienteId: venta.customer_id?.toString() || '',
+          clienteNombre: `Cliente #${venta.customer_id}`, // El backend no devuelve el nombre
+          items: (venta.sale_items || []).map(item => ({
+            producto: {
+              id: item.product_id?.toString() || '',
+              codigo: '',
+              nombre: `Producto #${item.product_id}`,
+              descripcion: '',
+              precio: item.price || 0,
+              stock: 0,
+              categoria: '',
+              proveedor: ''
+            },
+            cantidad: item.quantity || 0,
+            subtotal: item.total_item || 0
+          })),
+          subtotal: venta.total || 0,
+          descuento: 0,
+          impuesto: 0,
+          total: venta.total || 0,
+          metodoPago: 'Efectivo',
+          estado: this.mapearEstadoEntrega(venta.delivery_status),
+          vendedor: `Vendedor #${venta.seller_id}`
+        }));
+        
+        this.cargandoVentas = false;
+        this.mensaje = `${this.ventas.length} ventas cargadas desde el servidor`;
+        
+        // Limpiar mensaje después de 3 segundos
+        setTimeout(() => this.mensaje = '', 3000);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar ventas:', error);
+        this.error = `Error al cargar ventas del servidor: ${error.message}`;
+        this.cargandoVentas = false;
+        
+        // Cargar ventas desde localStorage como respaldo
+        const ventasGuardadas = localStorage.getItem('ventas');
+        if (ventasGuardadas) {
+          this.ventas = JSON.parse(ventasGuardadas);
+          this.mensaje = 'Ventas cargadas desde el almacenamiento local';
+        }
+      }
+    });
+  }
+
+  /**
+   * Mapea el estado de entrega del backend al estado de venta local
+   */
+  private mapearEstadoEntrega(deliveryStatus?: string): 'Completada' | 'Pendiente' | 'Cancelada' {
+    if (!deliveryStatus) return 'Pendiente';
+    
+    switch (deliveryStatus) {
+      case 'confirmed':
+        return 'Completada';
+      case 'cancelled':
+        return 'Cancelada';
+      case 'pending':
+      case 'in_progress':
+      default:
+        return 'Pendiente';
+    }
   }
 
   guardarClientes(): void {

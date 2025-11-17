@@ -1,0 +1,11 @@
+{
+  "/rrhh-api": {
+    "target": "https://akira.sedbaq.com.co",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/rrhh-api": "/rrhh"
+    }
+  }
+}

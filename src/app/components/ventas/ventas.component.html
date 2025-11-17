@@ -45,10 +45,16 @@
   <div *ngIf="seccionActiva === 'clientes'" class="section">
     <div class="section-header">
       <h3>Listado de Clientes</h3>
-      <button class="btn btn-primary" (click)="abrirFormCliente()">
-        <span class="icon">➕</span>
-        Nuevo Cliente
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-info" (click)="cargarVentasDesdeBackend()" [disabled]="cargandoVentas">
+          <span class="icon">🔄</span>
+          {{ cargandoVentas ? 'Cargando...' : 'Ver Ventas del Servidor' }}
+        </button>
+        <button class="btn btn-primary" (click)="abrirFormCliente()">
+          <span class="icon">➕</span>
+          Nuevo Cliente
+        </button>
+      </div>
     </div>
 
     <!-- Filtros de clientes -->
@@ -423,6 +429,52 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Lista de ventas del servidor -->
+    <div *ngIf="ventas.length > 0" class="mt-4">
+      <h4>📊 Ventas Registradas ({{ ventas.length }})</h4>
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Vendedor</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let venta of ventas">
+              <td>#{{ venta.id }}</td>
+              <td>{{ venta.fecha }}</td>
+              <td>{{ venta.clienteNombre }}</td>
+              <td>{{ venta.vendedor }}</td>
+              <td>{{ venta.items.length }}</td>
+              <td>{{ formatearPrecio(venta.total) }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'badge-success': venta.estado === 'Completada',
+                  'badge-warning': venta.estado === 'Pendiente',
+                  'badge-danger': venta.estado === 'Cancelada'
+                }">
+                  {{ venta.estado }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="cargandoVentas" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Cargando ventas del servidor...</p>
     </div>
   </div>
 </div>

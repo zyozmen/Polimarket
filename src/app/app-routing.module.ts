@@ -8,7 +8,7 @@ import { ProveedoresComponent } from './components/proveedores/proveedores.compo
 import { EntregasComponent } from './components/entregas/entregas.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: '/ventas', pathMatch: 'full' },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'bodega', component: BodegaComponent },
   { path: 'ventas', component: VentasComponent },
@@ -16,7 +16,7 @@ const routes: Routes = [
   { path: 'vendedores', redirectTo: '/recursos-humanos', pathMatch: 'full' },
   { path: 'proveedores', component: ProveedoresComponent },
   { path: 'entregas', component: EntregasComponent },
-  { path: '**', redirectTo: '/ventas' }
+  { path: '**', redirectTo: '/login' }
 ];
 
 @NgModule({

@@ -226,6 +226,21 @@ export class BodegaComponent implements OnInit {
       return;
     }
 
+    // ⚠️ VALIDACIÓN: Verificar si ya existe una solicitud pendiente o aprobada para este producto
+    const solicitudesGuardadas = localStorage.getItem('solicitudes');
+    const solicitudesExistentes: SolicitudProveedor[] = solicitudesGuardadas ? JSON.parse(solicitudesGuardadas) : [];
+    
+    const solicitudPendiente = solicitudesExistentes.find(s => 
+      s.productoId === this.productoSeleccionado!.id && 
+      (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+    );
+
+    if (solicitudPendiente) {
+      this.error = `Ya existe una solicitud ${solicitudPendiente.estado.toLowerCase()} para este producto. ` +
+                   `Por favor espere a que sea procesada antes de crear una nueva solicitud.`;
+      return;
+    }
+
     // Buscar información del proveedor
     const proveedor = this.proveedores.find(p => p.id === this.nuevaSolicitud.proveedorId);
     
@@ -242,10 +257,8 @@ export class BodegaComponent implements OnInit {
     };
 
     // Guardar en localStorage (se gestiona desde Proveedores)
-    const solicitudesGuardadas = localStorage.getItem('solicitudes');
-    const solicitudes = solicitudesGuardadas ? JSON.parse(solicitudesGuardadas) : [];
-    solicitudes.unshift(solicitud);
-    localStorage.setItem('solicitudes', JSON.stringify(solicitudes));
+    solicitudesExistentes.unshift(solicitud);
+    localStorage.setItem('solicitudes', JSON.stringify(solicitudesExistentes));
     
     this.mensaje = 'Solicitud creada exitosamente. Puede gestionarla desde el módulo de Proveedores';
     this.cerrarFormularios();

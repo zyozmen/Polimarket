@@ -485,6 +485,202 @@
   color: #666;
 }
 
+/* Estilos para formulario API */
+.bg-light {
+  background-color: #f8f9fa !important;
+  border-left: 4px solid #28a745;
+}
+
+.bg-info-subtle {
+  background-color: #e7f3ff !important;
+  border-left: 4px solid #0d6efd;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Acciones de API (Consultar y Autorizar) */
+.api-actions-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.api-action-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.api-action-card h5 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.api-action-card .text-muted {
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-group input[type="number"] {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.input-group input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.input-group input[type="number"]:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.input-group .btn {
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+/* Resultado de consulta de vendedor */
+.vendedor-detalle {
+  margin-top: 1rem;
+}
+
+.vendedor-detalle .info-group {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  height: 100%;
+}
+
+.vendedor-detalle .info-group label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vendedor-detalle .info-group p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #212529;
+}
+
+.vendedor-detalle .badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Sección de autorización */
+.authorization-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #dee2e6;
+  text-align: center;
+}
+
+.authorization-section .btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  min-width: 250px;
+  transition: all 0.3s ease;
+}
+
+.authorization-section .btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.authorization-section .btn-success:hover:not(:disabled) {
+  background-color: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.authorization-section .btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.authorization-section .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Utilidades Bootstrap-like */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+.col-md-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.fw-bold {
+  font-weight: 700;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+/* Utilidades */
+.d-flex {
+  display: flex;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .tabs {
@@ -507,5 +703,35 @@
   .permisos-grid,
   .permisos-grid-large {
     grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .api-actions-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .input-group .btn {
+    width: 100%;
+  }
+  
+  .col-md-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .d-flex {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .d-flex button {
+    width: 100%;
   }
 }
