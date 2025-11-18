@@ -15,12 +15,14 @@ export class HttpErrorInterceptor implements HttpInterceptor {
   constructor() {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Clonar la petición y asegurar Content-Type
-    request = request.clone({
-      setHeaders: {
-        'Content-Type': 'application/json'
-      }
-    });
+    // Solo agregar Content-Type para POST, PUT, PATCH
+    if (request.method !== 'GET' && request.method !== 'DELETE') {
+      request = request.clone({
+        setHeaders: {
+          'Content-Type': 'application/json'
+        }
+      });
+    }
 
     // Manejar la respuesta y errores
     return next.handle(request).pipe(

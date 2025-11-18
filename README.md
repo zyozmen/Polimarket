@@ -61,16 +61,32 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
 - **Validación de duplicados**: Previene solicitudes duplicadas
 
 ### 🚚 Módulo de Entregas
+- **✅ Integración completa con API REST**:
+  - Carga automática de entregas desde backend Rails
+  - Sincronización con ventas procesadas
+  - Dashboard con estadísticas en tiempo real
+- **Dashboard de estadísticas**:
+  - Total de entregas
+  - Entregas pendientes (⏳)
+  - Entregas en progreso (🚛)
+  - Entregas confirmadas (✅)
+  - Entregas canceladas (❌)
 - **Gestión de entregas**: Visualiza todas las entregas asociadas a ventas
-- **Control de estados**:
-  - Pendiente: Entrega recién creada
-  - En progreso: Entrega en camino
-  - Confirmada: Entrega completada exitosamente
-  - Cancelada: Entrega cancelada
-- **Acciones disponibles**:
-  - Marcar como "En progreso"
-  - Confirmar entrega
-  - Cancelar entrega
+- **Control de estados con validaciones**:
+  - **Pendiente**: Entrega recién creada desde una venta
+  - **En progreso**: Entrega en camino (solo desde pendiente)
+  - **Confirmada**: Entrega completada exitosamente
+  - **Cancelada**: Entrega cancelada (no disponible si ya está confirmada)
+- **Acciones contextuales**:
+  - 🚛 Marcar como "En progreso" (solo pendientes)
+  - ✅ Confirmar entrega (pendientes o en progreso)
+  - ❌ Cancelar entrega (pendientes o en progreso)
+  - Estados finales no permiten más acciones
+- **Filtrado y búsqueda**:
+  - Filtrar por estado (todos, pendientes, en progreso, confirmadas, canceladas)
+  - Buscar por ID, cliente o dirección
+  - Contador de resultados
+- **Integración automática**: Las entregas se crean automáticamente cuando se procesa una venta
 
 ### 🏪 Módulo de Proveedores
 - **Gestión de proveedores**: CRUD completo local
@@ -184,7 +200,7 @@ Polimarket/
 | **Customers** | ✅ Completo | CRUD completo de clientes |
 | **Sales** | ✅ Completo | Listar, filtrar, crear, buscar por ID con modal, aside del carrito |
 | **Products** | ✅ Integrado | Carga en módulo Ventas con actualización manual |
-| **Deliveries** | ⚠️ Pendiente | Servicio listo, UI pendiente |
+| **Deliveries** | ✅ Completo | Dashboard, gestión de estados, filtros, integración automática con ventas |
 
 Ver detalles completos en `SERVICES_CHECKLIST.md`
 
@@ -486,30 +502,64 @@ export class RecursosHumanosComponent {
 }
 ```
 
-### Ejemplo 4: Gestionar Entregas (Cuando esté integrado)
+### Ejemplo 4: Gestión de Entregas (Integrado)
 ```typescript
-import { Component } from '@angular/core';
-import { CustomersService } from '../../services/customers.service';
+import { Component, OnInit } from '@angular/core';
+import { DeliveriesService } from '../../services/deliveries.service';
 
-export class EditarClienteComponent {
-  constructor(private customersService: CustomersService) {}
+export class EntregasComponent implements OnInit {
+  entregas: any[] = [];
+  loading = false;
 
-  actualizarCliente(id: number) {
-    const datosActualizados = {
-      name: 'Nuevo Nombre',
-      email: 'nuevo@email.com',
-      phone: '555-9999'
-    };
+  constructor(private deliveriesService: DeliveriesService) {}
 
-    this.customersService.updateCustomer(id, datosActualizados).subscribe({
-      next: (response) => {
-        console.log('Cliente actualizado:', response);
-        alert('Cliente actualizado exitosamente');
+  ngOnInit() {
+    this.cargarEntregas();
+  }
+
+  cargarEntregas() {
+    this.loading = true;
+    
+    this.deliveriesService.getDeliveries().subscribe({
+      next: (entregas) => {
+        this.entregas = entregas;
+        this.loading = false;
+        console.log(`${entregas.length} entregas cargadas`);
       },
       error: (error) => {
         console.error('Error:', error);
-        alert('Error al actualizar: ' + error.message);
+        this.loading = false;
       }
+    });
+  }
+
+  marcarEnProgreso(id: number) {
+    this.deliveriesService.markInProgress(id).subscribe({
+      next: (entrega) => {
+        console.log('Entrega marcada como en progreso:', entrega);
+        this.cargarEntregas(); // Recargar lista
+      },
+      error: (error) => console.error('Error:', error)
+    });
+  }
+
+  confirmarEntrega(id: number) {
+    this.deliveriesService.confirmDelivery(id).subscribe({
+      next: (entrega) => {
+        console.log('Entrega confirmada:', entrega);
+        this.cargarEntregas(); // Recargar lista
+      },
+      error: (error) => console.error('Error:', error)
+    });
+  }
+
+  cancelarEntrega(id: number) {
+    this.deliveriesService.cancelDelivery(id).subscribe({
+      next: (entrega) => {
+        console.log('Entrega cancelada:', entrega);
+        this.cargarEntregas(); // Recargar lista
+      },
+      error: (error) => console.error('Error:', error)
     });
   }
 }
@@ -546,7 +596,20 @@ export class EditarClienteComponent {
 4. **Hacer clic en 👁️** para ver detalles completos en modal
 5. **Filtrar por cliente** usando botón "Ver Historial" en tarjeta de cliente
 
-### 4. Consulta de Inventario
+### 4. Gestión de Entregas
+1. Acceder al módulo "Entregas"
+2. Ver dashboard con estadísticas de entregas
+3. **Las entregas aparecen automáticamente** después de procesar ventas
+4. **Filtrar entregas**:
+   - Por estado (Pendientes, En Progreso, Confirmadas, Canceladas)
+   - Por búsqueda (ID, cliente, dirección)
+5. **Gestionar estado de cada entrega**:
+   - Entregas pendientes: Marcar como "En Progreso" 🚛 o Confirmar ✅
+   - Entregas en progreso: Confirmar ✅ o Cancelar ❌
+   - Entregas confirmadas/canceladas: Estado final, no se pueden modificar
+6. Seguimiento en tiempo real del estado de cada entrega
+
+### 5. Consulta de Inventario
 1. Acceder al módulo de Bodega
 2. Ver todos los productos disponibles
 3. Consultar detalles: nombre, precio, stock, categoría
@@ -720,7 +783,9 @@ export const environment = {
 - [x] Tabla compacta para historial
 - [x] Aside del carrito en productos
 - [x] Checkout integrado sin cambiar de sección
-- [ ] Integración de Deliveries Service
+- [x] Integración completa de Deliveries Service
+- [x] Dashboard de entregas con estadísticas
+- [x] Gestión de estados de entregas
 - [ ] Paginación en listados
 - [ ] Búsqueda avanzada con filtros
 - [ ] Exportación de datos a PDF/Excel

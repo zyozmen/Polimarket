@@ -700,20 +700,27 @@ export class VentasComponent implements OnInit {
   // ==================== Procesamiento de Ventas ====================
 
   procesarVenta(): void {
+    console.log('🔵 procesarVenta() llamado');
+    console.log('Cliente seleccionado:', this.clienteVenta);
+    console.log('Carrito:', this.carrito);
+    
     if (!this.clienteVenta) {
       this.error = 'Debe seleccionar un cliente';
+      console.error('❌ No hay cliente seleccionado');
       setTimeout(() => this.error = '', 3000);
       return;
     }
 
     if (this.carrito.length === 0) {
       this.error = 'El carrito está vacío';
+      console.error('❌ El carrito está vacío');
       setTimeout(() => this.error = '', 3000);
       return;
     }
 
     this.procesandoVenta = true;
     this.error = '';
+    console.log('✅ Validaciones pasadas, procesando venta...');
 
     // Preparar datos para el backend
     const saleRequest = {
@@ -730,6 +737,8 @@ export class VentasComponent implements OnInit {
         }))
       }
     };
+
+    console.log('📤 Enviando petición al backend:', saleRequest);
 
     // Enviar al backend
     this.salesService.createSale(saleRequest).subscribe({

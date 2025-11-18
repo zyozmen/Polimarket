@@ -1,9 +1,213 @@
-<div class="module-container">
+<div class="entregas-container">
   <div class="module-header">
-    <h2>📋 Módulo de Entregas</h2>
-    <p>Gestión de entregas y logística</p>
+    <h2>🚚 Módulo de Entregas</h2>
+    <p>Gestión y seguimiento de entregas de ventas</p>
   </div>
-  <div class="module-content">
-    <p>Contenido del módulo en desarrollo...</p>
+
+  <!-- Mensajes -->
+  <div *ngIf="error" class="alert alert-danger d-flex justify-content-between align-items-center">
+    <span>{{ error }}</span>
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <div *ngIf="mensaje" class="alert alert-success d-flex justify-content-between align-items-center">
+    <span>{{ mensaje }}</span>
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="estadisticas-container">
+    <div class="estadistica-card total">
+      <div class="estadistica-icono">📦</div>
+      <div class="estadistica-info">
+        <div class="estadistica-valor">{{ totalEntregas }}</div>
+        <div class="estadistica-label">Total Entregas</div>
+      </div>
+    </div>
+
+    <div class="estadistica-card pendiente">
+      <div class="estadistica-icono">⏳</div>
+      <div class="estadistica-info">
+        <div class="estadistica-valor">{{ entregasPendientes }}</div>
+        <div class="estadistica-label">Pendientes</div>
+      </div>
+    </div>
+
+    <div class="estadistica-card progreso">
+      <div class="estadistica-icono">🚛</div>
+      <div class="estadistica-info">
+        <div class="estadistica-valor">{{ entregasEnProgreso }}</div>
+        <div class="estadistica-label">En Progreso</div>
+      </div>
+    </div>
+
+    <div class="estadistica-card confirmada">
+      <div class="estadistica-icono">✅</div>
+      <div class="estadistica-info">
+        <div class="estadistica-valor">{{ entregasConfirmadas }}</div>
+        <div class="estadistica-label">Confirmadas</div>
+      </div>
+    </div>
+
+    <div class="estadistica-card cancelada">
+      <div class="estadistica-icono">❌</div>
+      <div class="estadistica-info">
+        <div class="estadistica-valor">{{ entregasCanceladas }}</div>
+        <div class="estadistica-label">Canceladas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros y búsqueda -->
+  <div class="filtros-container">
+    <div class="row align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Buscar entrega</label>
+        <input 
+          type="text" 
+          class="form-control"
+          [(ngModel)]="busqueda"
+          (input)="aplicarFiltros()"
+          placeholder="ID, cliente, dirección...">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Estado</label>
+        <select 
+          class="form-select"
+          [(ngModel)]="estadoFiltro"
+          (change)="aplicarFiltros()">
+          <option value="todos">Todos los estados</option>
+          <option value="pending">Pendientes</option>
+          <option value="in_progress">En Progreso</option>
+          <option value="confirmed">Confirmadas</option>
+          <option value="cancelled">Canceladas</option>
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <button 
+          class="btn btn-primary w-100"
+          (click)="cargarEntregas()"
+          [disabled]="cargando">
+          <span *ngIf="!cargando">🔄 Actualizar</span>
+          <span *ngIf="cargando">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Cargando...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicador de carga -->
+  <div *ngIf="cargando && entregas.length === 0" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando entregas...</span>
+    </div>
+    <p class="mt-3">Cargando entregas desde el servidor...</p>
+  </div>
+
+  <!-- Tabla de entregas -->
+  <div *ngIf="!cargando || entregas.length > 0" class="table-container">
+    <div *ngIf="entregasFiltradas.length === 0 && !cargando" class="mensaje-vacio">
+      <div class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+        <h4 class="mt-3">No hay entregas</h4>
+        <p class="text-muted" *ngIf="estadoFiltro !== 'todos' || busqueda">
+          Intenta cambiar los filtros de búsqueda
+        </p>
+        <p class="text-muted" *ngIf="estadoFiltro === 'todos' && !busqueda">
+          Las entregas de ventas aparecerán aquí automáticamente
+        </p>
+      </div>
+    </div>
+
+    <div *ngIf="entregasFiltradas.length > 0" class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th style="width: 120px;">Fecha</th>
+            <th>Cliente</th>
+            <th>Dirección</th>
+            <th class="text-center" style="width: 80px;">Items</th>
+            <th class="text-end" style="width: 120px;">Total</th>
+            <th class="text-center" style="width: 130px;">Estado</th>
+            <th class="text-center" style="width: 200px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entrega of entregasFiltradas" [class.procesando]="procesando">
+            <td><strong>#{{ entrega.id }}</strong></td>
+            <td>{{ entrega.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <strong>{{ entrega.clienteNombre }}</strong>
+            </td>
+            <td>
+              <small class="text-muted">{{ entrega.direccion }}</small>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary">{{ entrega.items }}</span>
+            </td>
+            <td class="text-end">
+              <strong class="text-success">{{ formatearPrecio(entrega.total) }}</strong>
+            </td>
+            <td class="text-center">
+              <span [class]="getEstadoClass(entrega.estado)">
+                {{ getEstadoTexto(entrega.estado) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <!-- Botón: Marcar en progreso -->
+                <button 
+                  *ngIf="entrega.estado === 'pending'"
+                  class="btn btn-info"
+                  (click)="marcarEnProgreso(entrega)"
+                  [disabled]="procesando"
+                  title="Marcar como en progreso">
+                  🚛
+                </button>
+
+                <!-- Botón: Confirmar entrega -->
+                <button 
+                  *ngIf="entrega.estado === 'pending' || entrega.estado === 'in_progress'"
+                  class="btn btn-success"
+                  (click)="confirmarEntrega(entrega)"
+                  [disabled]="procesando"
+                  title="Confirmar entrega">
+                  ✅
+                </button>
+
+                <!-- Botón: Cancelar entrega -->
+                <button 
+                  *ngIf="entrega.estado !== 'confirmed' && entrega.estado !== 'cancelled'"
+                  class="btn btn-danger"
+                  (click)="cancelarEntrega(entrega)"
+                  [disabled]="procesando"
+                  title="Cancelar entrega">
+                  ❌
+                </button>
+
+                <!-- Estado final -->
+                <span 
+                  *ngIf="entrega.estado === 'confirmed' || entrega.estado === 'cancelled'"
+                  class="badge bg-secondary">
+                  Estado final
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Resumen de filtros -->
+    <div *ngIf="entregasFiltradas.length > 0" class="filtros-resumen">
+      <p class="mb-0">
+        Mostrando <strong>{{ entregasFiltradas.length }}</strong> de <strong>{{ entregas.length }}</strong> entregas
+      </p>
+    </div>
   </div>
 </div>

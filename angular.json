@@ -57,12 +57,19 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.js",
+            "port": 4200,
+            "host": "localhost"
+          },
           "configurations": {
             "production": {
-              "buildTarget": "polimarket-app:build:production"
+              "buildTarget": "polimarket-app:build:production",
+              "proxyConfig": "proxy.conf.js"
             },
             "development": {
-              "buildTarget": "polimarket-app:build:development"
+              "buildTarget": "polimarket-app:build:development",
+              "proxyConfig": "proxy.conf.js"
             }
           },
           "defaultConfiguration": "development"
