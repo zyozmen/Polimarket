@@ -26,6 +26,17 @@ export class DeliveriesService {
   }
 
   /**
+   * Lista todas las entregas no confirmadas (pending, in_progress, cancelled)
+   * GET /deliveries?status[]=pending&status[]=in_progress&status[]=cancelled
+   */
+  getUnconfirmedDeliveries(): Observable<Delivery[]> {
+    const params = {
+      'status[]': ['pending', 'in_progress', 'cancelled']
+    };
+    return this.http.get<Delivery[]>(this.API_URL, { params });
+  }
+
+  /**
    * Confirma una entrega
    * POST /deliveries/:id/confirm
    * 

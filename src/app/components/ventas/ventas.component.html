@@ -179,7 +179,7 @@
 
     <!-- Lista de clientes -->
     <div *ngIf="!mostrarFormCliente" class="clientes-grid">
-      <div *ngFor="let cliente of clientesFiltrados" class="cliente-card">
+      <div *ngFor="let cliente of clientesFiltrados; trackBy: trackByClienteId" class="cliente-card">
         <div class="cliente-header">
           <div class="cliente-avatar">{{ cliente.nombre.charAt(0).toUpperCase() }}</div>
           <span class="badge-tipo" [ngClass]="getTipoClienteClass(cliente.tipoCliente)">
@@ -295,7 +295,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let venta of ventasFiltradas">
+          <tr *ngFor="let venta of ventasFiltradas; trackBy: trackByVentaId">
             <td><strong>#{{ venta.id }}</strong></td>
             <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
             <td>
@@ -389,7 +389,7 @@
 
         <!-- Grid de productos -->
         <div class="productos-grid">
-          <div *ngFor="let producto of productosFiltrados" class="producto-card">
+          <div *ngFor="let producto of productosFiltrados; trackBy: trackByProductoId" class="producto-card">
             <div class="producto-header">
               <span class="producto-codigo">{{ producto.codigo }}</span>
               <span class="badge-stock" [ngClass]="getStockClass(producto.stock)">

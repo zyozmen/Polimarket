@@ -20,8 +20,8 @@ export interface Sale {
   seller_id: number;
   date: string;
   comments?: string;
-  total?: number;
-  delivery_status?: 'pending' | 'in_progress' | 'confirmed' | 'cancelled';
+  total?: number | string;  // Backend puede enviar string "5100.0" o number
+  delivery_status?: string;  // Backend envía "PENDIENTE", "EN_PROGRESO", etc.
   created_at?: string;
   sale_items?: SaleItem[];
 }
@@ -114,6 +114,9 @@ export class SalesService {
    * Calcula el total de ventas
    */
   calculateTotal(sales: Sale[]): number {
-    return sales.reduce((sum, sale) => sum + (sale.total || 0), 0);
+    return sales.reduce((sum, sale) => {
+      const total = typeof sale.total === 'string' ? parseFloat(sale.total) : (sale.total || 0);
+      return sum + total;
+    }, 0);
   }
 }

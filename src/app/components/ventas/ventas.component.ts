@@ -2,6 +2,7 @@ import { Component, OnInit, HostListener } from '@angular/core';
 import { SalesService } from '../../services/sales.service';
 import { CustomersService, Customer } from '../../services/customers.service';
 import { ProductsService, Product } from '../../services/products.service';
+import { forkJoin } from 'rxjs';
 
 interface Cliente {
   id: string;
@@ -115,10 +116,110 @@ export class VentasComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cargarClientesDesdeBackend();
-    this.cargarProductosDesdeBackend();
-    this.cargarDatos();
-    this.cargarVentasDesdeBackend();
+    this.cargarTodoEnParalelo();
+  }
+
+  /**
+   * Carga todos los datos en paralelo para mejor rendimiento
+   */
+  cargarTodoEnParalelo(): void {
+    this.cargandoClientes = true;
+    this.cargandoProductos = true;
+    this.cargandoVentas = true;
+    this.error = '';
+
+    forkJoin({
+      clientes: this.customersService.getCustomers(),
+      productos: this.productsService.getProducts(),
+      ventas: this.salesService.getSales()
+    }).subscribe({
+      next: ({ clientes, productos, ventas }) => {
+        // Mapear clientes
+        this.clientes = clientes.map(customer => ({
+          id: customer.id?.toString() || '',
+          nombre: customer.name || '',
+          documento: customer.identification || '',
+          email: customer.email || '',
+          telefono: customer.phone || '',
+          direccion: customer.address || '',
+          ciudad: '',
+          tipoCliente: 'Regular' as 'Regular' | 'VIP' | 'Nuevo'
+        }));
+
+        // Mapear productos
+        this.productos = productos.map(product => ({
+          id: product.id?.toString() || '',
+          codigo: `PROD-${product.id}`,
+          nombre: product.name || '',
+          descripcion: product.description || '',
+          precio: typeof product.price === 'string' ? parseFloat(product.price) : (product.price || 0),
+          stock: product.stock || 0,
+          categoria: product.category || '',
+          proveedor: 'N/A'
+        }));
+
+        // Mapear ventas
+        this.ventas = ventas.map(venta => {
+          const cliente = this.clientes.find(c => c.id === venta.customer_id?.toString());
+          const items = (venta.sale_items || []).map(item => {
+            const producto = this.productos.find(p => p.id === item.product_id?.toString());
+            return {
+              producto: {
+                id: item.product_id?.toString() || '',
+                codigo: producto?.codigo || `PROD-${item.product_id}`,
+                nombre: producto?.nombre || `Producto #${item.product_id}`,
+                descripcion: producto?.descripcion || '',
+                precio: item.price || 0,
+                stock: producto?.stock || 0,
+                categoria: producto?.categoria || '',
+                proveedor: producto?.proveedor || ''
+              },
+              cantidad: item.quantity || 0,
+              subtotal: item.total_item || 0
+            };
+          });
+
+          return {
+            id: venta.id?.toString() || '',
+            fecha: venta.date || '',
+            clienteId: venta.customer_id?.toString() || '',
+            clienteNombre: cliente?.nombre || `Cliente #${venta.customer_id}`,
+            items: items,
+            subtotal: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
+            descuento: 0,
+            impuesto: 0,
+            total: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
+            metodoPago: 'Efectivo',
+            estado: this.mapearEstadoEntrega(venta.delivery_status),
+            vendedor: `Vendedor #${venta.seller_id}`
+          };
+        });
+
+        this.cargandoClientes = false;
+        this.cargandoProductos = false;
+        this.cargandoVentas = false;
+        this.aplicarFiltros();
+        
+        console.log(`✅ Datos cargados: ${this.clientes.length} clientes, ${this.productos.length} productos, ${this.ventas.length} ventas`);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar datos:', error);
+        this.cargandoClientes = false;
+        this.cargandoProductos = false;
+        this.cargandoVentas = false;
+        
+        if (error.status === 404) {
+          this.error = 'El servidor está despertando... Espera 1-2 minutos e intenta de nuevo.';
+        } else if (error.status === 0) {
+          this.error = 'No se pudo conectar al servidor.';
+        } else {
+          this.error = `Error: ${error.message || 'Error desconocido'}`;
+        }
+        
+        // Cargar desde localStorage como respaldo
+        this.cargarClientesDesdeLocalStorage();
+      }
+    });
   }
 
   /**
@@ -228,10 +329,10 @@ export class VentasComponent implements OnInit {
             clienteId: venta.customer_id?.toString() || '',
             clienteNombre: cliente?.nombre || `Cliente #${venta.customer_id}`,
             items: items,
-            subtotal: venta.total || 0,
+            subtotal: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
             descuento: 0,
             impuesto: 0,
-            total: venta.total || 0,
+            total: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
             metodoPago: 'Efectivo',
             estado: this.mapearEstadoEntrega(venta.delivery_status),
             vendedor: `Vendedor #${venta.seller_id}`
@@ -914,7 +1015,8 @@ export class VentasComponent implements OnInit {
         const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
         const descuento = 0;
         const impuesto = subtotal * 0.19;
-        const total = saleData.total || subtotal + impuesto - descuento;
+        const totalSale = typeof saleData.total === 'string' ? parseFloat(saleData.total) : saleData.total;
+        const total = totalSale || subtotal + impuesto - descuento;
 
         this.ventaDetalle = {
           id: saleData.id?.toString() || '0',
@@ -1024,5 +1126,18 @@ export class VentasComponent implements OnInit {
       event.preventDefault();
       this.cancelarVenta();
     }
+  }
+
+  // TrackBy functions para optimizar renderizado de listas
+  trackByVentaId(index: number, venta: Venta): string {
+    return venta.id;
+  }
+
+  trackByClienteId(index: number, cliente: Cliente): string {
+    return cliente.id;
+  }
+
+  trackByProductoId(index: number, producto: Producto): string {
+    return producto.id;
   }
 }

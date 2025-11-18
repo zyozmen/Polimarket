@@ -33,14 +33,6 @@
       </div>
     </div>
 
-    <div class="estadistica-card progreso">
-      <div class="estadistica-icono">🚛</div>
-      <div class="estadistica-info">
-        <div class="estadistica-valor">{{ entregasEnProgreso }}</div>
-        <div class="estadistica-label">En Progreso</div>
-      </div>
-    </div>
-
     <div class="estadistica-card confirmada">
       <div class="estadistica-icono">✅</div>
       <div class="estadistica-info">
@@ -79,7 +71,6 @@
           (change)="aplicarFiltros()">
           <option value="todos">Todos los estados</option>
           <option value="pending">Pendientes</option>
-          <option value="in_progress">En Progreso</option>
           <option value="confirmed">Confirmadas</option>
           <option value="cancelled">Canceladas</option>
         </select>
@@ -88,7 +79,7 @@
       <div class="col-md-2">
         <button 
           class="btn btn-primary w-100"
-          (click)="cargarEntregas()"
+          (click)="cargarDatos()"
           [disabled]="cargando">
           <span *ngIf="!cargando">🔄 Actualizar</span>
           <span *ngIf="cargando">
@@ -138,7 +129,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let entrega of entregasFiltradas" [class.procesando]="procesando">
+          <tr *ngFor="let entrega of entregasFiltradas; trackBy: trackByEntregaId" [class.procesando]="procesando">
             <td><strong>#{{ entrega.id }}</strong></td>
             <td>{{ entrega.fecha | date:'dd/MM/yyyy' }}</td>
             <td>
@@ -159,41 +150,27 @@
               </span>
             </td>
             <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <!-- Botón: Marcar en progreso -->
+              <!-- Pendiente: puede confirmar o cancelar -->
+              <div *ngIf="entrega.estado === 'pending'" class="btn-group btn-group-sm" role="group">
                 <button 
-                  *ngIf="entrega.estado === 'pending'"
-                  class="btn btn-info"
-                  (click)="marcarEnProgreso(entrega)"
-                  [disabled]="procesando"
-                  title="Marcar como en progreso">
-                  🚛
-                </button>
-
-                <!-- Botón: Confirmar entrega -->
-                <button 
-                  *ngIf="entrega.estado === 'pending' || entrega.estado === 'in_progress'"
                   class="btn btn-success"
                   (click)="confirmarEntrega(entrega)"
                   [disabled]="procesando"
                   title="Confirmar entrega">
-                  ✅
+                  ✅ Confirmar
                 </button>
-
-                <!-- Botón: Cancelar entrega -->
                 <button 
-                  *ngIf="entrega.estado !== 'confirmed' && entrega.estado !== 'cancelled'"
                   class="btn btn-danger"
                   (click)="cancelarEntrega(entrega)"
                   [disabled]="procesando"
                   title="Cancelar entrega">
-                  ❌
+                  ❌ Cancelar
                 </button>
+              </div>
 
-                <!-- Estado final -->
-                <span 
-                  *ngIf="entrega.estado === 'confirmed' || entrega.estado === 'cancelled'"
-                  class="badge bg-secondary">
+              <!-- Confirmada o cancelada: estado final -->
+              <div *ngIf="entrega.estado === 'confirmed' || entrega.estado === 'cancelled'">
+                <span class="badge bg-secondary">
                   Estado final
                 </span>
               </div>
