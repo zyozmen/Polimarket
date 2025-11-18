@@ -17,16 +17,24 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
   - Respaldo con localStorage en caso de error
 - **✅ Historial de ventas desde servidor**: 
   - Consulta de ventas desde backend Rails
+  - **Tabla compacta** para mejor visualización y lectura
+  - **Búsqueda de venta por ID** con campo de búsqueda dedicado
+  - **Modal de detalles** mostrando información completa de cualquier venta
   - Visualización de items y estados de entrega
   - Mapeo automático de estados (Pendiente, En Progreso, Confirmado, Cancelado)
   - **Filtrado por cliente**: Ver historial de ventas de un cliente específico
   - Botón "Ver Historial" en cada tarjeta de cliente
   - Alerta informativa mostrando el cliente filtrado
   - Opción para volver a ver todas las ventas
+  - Botón 👁️ en cada fila para ver detalles instantáneamente
 - **✅ Procesamiento de ventas con API REST**:
   - Crear ventas en tiempo real en el backend
+  - **Aside/Sidebar del carrito** visible durante selección de productos
+  - **Checkout integrado** sin necesidad de cambiar de sección
+  - Información del cliente siempre visible en el carrito
   - Selección ágil de cliente y productos
   - Actualización visual instantánea del stock
+  - **Sincronización de stock** correcta: recarga desde backend después de procesar
   - Múltiples items por venta
   - Cálculo automático de totales con IVA y descuentos
   - Indicador de progreso durante el procesamiento
@@ -34,6 +42,7 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
   - **Atajos de teclado**: Ctrl+Enter o F2 para procesar, Esc para cancelar
   - Manejo inteligente de errores con mensajes claros
   - Total visible en el botón de procesar para decisión rápida
+  - **UX moderna**: Carrito sticky que sigue al usuario durante el scroll
 
 ### 👥 Módulo de Recursos Humanos
 - **✅ Integración completa con API RRHH** (`https://akira.sedbaq.com.co/rrhh`):
@@ -173,7 +182,7 @@ Polimarket/
 |----------|--------|---------------|
 | **RRHH API** | ✅ Completo | Crear, consultar y autorizar vendedores |
 | **Customers** | ✅ Completo | CRUD completo de clientes |
-| **Sales** | ✅ Completo | Listar, filtrar y crear ventas con atajos de teclado |
+| **Sales** | ✅ Completo | Listar, filtrar, crear, buscar por ID con modal, aside del carrito |
 | **Products** | ✅ Integrado | Carga en módulo Ventas con actualización manual |
 | **Deliveries** | ⚠️ Pendiente | Servicio listo, UI pendiente |
 
@@ -306,7 +315,7 @@ POST /sales
 }
 ```
 
-#### Entregas (`/deliveries`)
+#### 🚚 Entregas (`/deliveries`) - Rails API
 ```typescript
 // Listar todas las entregas
 GET /deliveries
@@ -515,12 +524,27 @@ export class EditarClienteComponent {
 4. Editar información de clientes existentes
 
 ### 2. Registro de Ventas
-1. Seleccionar cliente de la lista
-2. Agregar productos al carrito:
+1. Seleccionar cliente de la lista (navega automáticamente a productos)
+2. **El aside del carrito aparece a la derecha**
+3. Agregar productos al carrito desde el grid:
    - Elegir producto
-   - Especificar cantidad
-   - Aplicar descuento (opcional)
-   - Agregar comentarios
+   - Especificar cantidad con botones +/-
+   - Ver subtotal en tiempo real
+4. **Gestionar compra desde el aside**:
+   - Ver resumen de items en el carrito
+   - Ver total actualizado en tiempo real
+   - Aplicar descuento porcentual
+   - Seleccionar método de pago
+   - Agregar notas opcionales
+5. **Procesar venta** directamente desde el aside (sin cambiar de sección)
+6. Stock se actualiza automáticamente desde el backend
+
+### 3. Consulta de Ventas
+1. Acceder al módulo "Historial de Ventas"
+2. Ver tabla compacta con todas las ventas
+3. **Buscar venta específica por ID** usando el campo de búsqueda
+4. **Hacer clic en 👁️** para ver detalles completos en modal
+5. **Filtrar por cliente** usando botón "Ver Historial" en tarjeta de cliente
 
 ### 4. Consulta de Inventario
 1. Acceder al módulo de Bodega
@@ -638,7 +662,7 @@ Todas las peticiones y errores se registran automáticamente en la consola del n
 
 ### Verificar estado del backend
 ```bash
-curl http://localhost:3000/up
+curl https://ventas-al0w.onrender.com/up
 ```
 
 Debería devolver `200 OK` si el backend está funcionando.
@@ -646,15 +670,15 @@ Debería devolver `200 OK` si el backend está funcionando.
 ### Probar endpoints manualmente
 ```bash
 # Listar clientes
-curl http://localhost:3000/customers
+curl https://ventas-al0w.onrender.com/customers
 
 # Crear cliente
-curl -X POST http://localhost:3000/customers \
+curl -X POST https://ventas-al0w.onrender.com/customers \
   -H "Content-Type: application/json" \
   -d '{"customer":{"identification":"12345","name":"Test","email":"test@test.com","address":"Test St","phone":"555-0000"}}'
 
 # Crear venta
-curl -X POST http://localhost:3000/sales \
+curl -X POST https://ventas-al0w.onrender.com/sales \
   -H "Content-Type: application/json" \
   -d '{"sale":{"customer_id":1,"seller_id":1,"date":"2025-11-14","sale_items_attributes":[{"product_id":1,"quantity":2}]}}'
 ```
@@ -675,7 +699,7 @@ ng build --configuration production
 // environment.ts (Desarrollo)
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000',
+  apiUrl: 'https://ventas-al0w.onrender.com',
   apiTimeout: 30000,
   enableDebug: true
 };
@@ -683,7 +707,7 @@ export const environment = {
 // environment.prod.ts (Producción)
 export const environment = {
   production: true,
-  apiUrl: 'https://api.tudominio.com',
+  apiUrl: 'https://ventas-al0w.onrender.com',
   apiTimeout: 30000,
   enableDebug: false
 };
@@ -691,6 +715,12 @@ export const environment = {
 
 ## 🚀 Próximas Funcionalidades
 
+- [x] Búsqueda de ventas por ID
+- [x] Modal de detalle de ventas
+- [x] Tabla compacta para historial
+- [x] Aside del carrito en productos
+- [x] Checkout integrado sin cambiar de sección
+- [ ] Integración de Deliveries Service
 - [ ] Paginación en listados
 - [ ] Búsqueda avanzada con filtros
 - [ ] Exportación de datos a PDF/Excel
@@ -718,10 +748,19 @@ Si tienes dudas sobre los servicios o necesitas ayuda:
 
 Este proyecto es parte del desarrollo de PoliMarket - Sistema de Gestión de Ventas y Entregas.
 
-## 👥 Autor
+## 👥 Autores
 
-Desarrollado para PoliMarket
+### Frontend (Angular)
+**NELSON JAVIER PARRA HOYOS** - Desarrollo de la aplicación Angular e integración de servicios
+
+### Backend (Ruby on Rails - API de Ventas)
+**JOHAN JOSE DONADO BANDERAS** - Desarrollo del backend Rails y API REST
+
+### Backend (API RRHH)
+**ALEXIS ARIEL CARRASCO GARCIA** - Desarrollo de la API externa de Recursos Humanos
 
 ---
 
-**Nota**: Esta aplicación se conecta a un backend Ruby on Rails. Asegúrate de que el backend esté corriendo en `http://localhost:3000` antes de iniciar la aplicación.
+**Nota**: Esta aplicación se conecta a backends externos:
+- **API de Ventas (Rails)**: `https://ventas-al0w.onrender.com`
+- **API RRHH**: `https://akira.sedbaq.com.co/rrhh`

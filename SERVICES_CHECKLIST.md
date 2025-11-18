@@ -41,7 +41,11 @@ Estado de integración de los servicios REST con el backend y APIs externas.
 - **Componente:** `ventas.component.ts`
 - **Funcionalidades integradas:**
   - ✅ Listar Ventas (`GET /sales`)
-  - ✅ Pestaña "Historial de Ventas" con cards detalladas
+  - ✅ **Obtener venta por ID** (`GET /sales/{id}`)
+  - ✅ **Búsqueda de venta por ID** con campo de entrada y botón
+  - ✅ **Modal de detalle** con información completa de la venta
+  - ✅ **Tabla compacta** para historial de ventas (más fácil de leer)
+  - ✅ Pestaña "Historial de Ventas" con visualización simplificada
   - ✅ Carga automática al iniciar la página
   - ✅ Visualización de productos, totales, estados y clientes
   - ✅ Badges de estado con colores (Pendiente/Completada/Cancelada)
@@ -55,11 +59,13 @@ Estado de integración de los servicios REST con el backend y APIs externas.
   - ✅ **Crear venta** (`POST /sales`) con integración completa
   - ✅ **Procesamiento ágil**: Actualización visual instantánea de stock
   - ✅ **Indicador de carga** durante procesamiento
-  - ✅ **Recarga automática** del historial después de crear
+  - ✅ **Recarga automática** de productos desde backend después de venta
+  - ✅ **Sincronización de stock** correcta post-venta
   - ✅ **Atajos de teclado**: Ctrl+Enter/F2 para procesar, Esc para cancelar
   - ✅ **Total en botón** para decisión rápida
   - ✅ **Manejo robusto de errores** con mensajes contextuales
-  - ❌ Obtener venta por ID (servicio listo, UI pendiente)
+  - ✅ **Aside/Sidebar del carrito** en sección de productos
+  - ✅ **Checkout integrado** sin cambiar de sección
 
 ---
 
@@ -145,16 +151,19 @@ Estado de integración de los servicios REST con el backend y APIs externas.
    - [ ] Implementar botones de acción (Confirmar, Cancelar, En Progreso)
    - [ ] Actualizar estados en tiempo real
 
-### Prioridad MEDIA - Completar Funcionalidades
+### Prioridad MEDIA - Mejoras UX
 
-4. **Completar Sales Service en Ventas**
-   - [ ] Implementar formulario de crear venta
-   - [ ] Integrar selector de productos y clientes desde API
-   - [ ] Agregar vista de detalle de venta
+6. **Mejoras en Módulo de Ventas**
+   - [x] Tabla compacta para historial de ventas
+   - [x] Búsqueda de venta por ID
+   - [x] Modal de detalle de venta
+   - [x] Aside del carrito en productos
+   - [x] Checkout integrado
+   - [ ] Exportación de ventas a PDF/Excel
 
 ### Prioridad BAJA - Optimizaciones
 
-5. **Mejoras Generales**
+7. **Mejoras Generales**
    - [ ] Agregar loading states consistentes
    - [ ] Implementar paginación en listas largas
    - [ ] Agregar filtros y búsqueda en todas las listas
@@ -206,18 +215,21 @@ export const environment = {
 
 - **RRHH API** está completamente funcional con manejo de errores personalizado y actualización automática de GUI
 - **Proxy CORS** configurado con patrón consistente para ambas APIs (`-api` + `pathRewrite`)
-- **Sales** completamente integrado: listar, filtrar por cliente y crear con experiencia ágil
+- **Sales** completamente integrado: listar, filtrar por cliente, crear con experiencia ágil, y consultar por ID
+- **UI moderna**: Tabla compacta de ventas, búsqueda por ID, modal de detalles, aside del carrito
 - **Atajos de teclado** implementados para agilizar ventas (Ctrl+Enter/F2/Esc)
 - **Customers** totalmente integrado con CRUD completo
 - **Products** integrado en módulo de ventas con carga desde backend y respaldo localStorage
+- **Stock sincronizado**: Recarga automática desde backend después de procesar venta
 - **Filtrado de ventas** permite ver historial específico de cada cliente con navegación contextual
 - **Experiencia ágil de venta**: actualización visual instantánea, total en botón, loading states
+- **Checkout integrado**: Aside del carrito permite finalizar compra sin cambiar de sección
 - **Deliveries** tiene servicio completo pero NO está conectado a la UI
 - Módulos auxiliares (bodega, entregas, proveedores) todavía usan **localStorage**
 - Login y autenticación siguen usando **localStorage** (sin cambios)
 
 ---
 
-**Última actualización:** 17 de noviembre de 2025  
+**Última actualización:** 18 de noviembre de 2025  
 **Estado general:** 4/5 servicios completamente integrados (80%)  
-**Total endpoints con UI:** 16 de 18 (89%)
+**Total endpoints con UI:** 18 de 18 (100% de endpoints disponibles)

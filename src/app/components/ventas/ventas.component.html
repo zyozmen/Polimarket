@@ -43,14 +43,6 @@
       <span class="icon">📦</span>
       Productos Disponibles
     </button>
-    <button 
-      class="tab-btn" 
-      [class.active]="seccionActiva === 'realizar-venta'"
-      (click)="cambiarSeccion('realizar-venta')"
-      *ngIf="clienteVenta">
-      <span class="icon">🛒</span>
-      Realizar Venta ({{ carrito.length }})
-    </button>
   </div>
 
   <!-- Sección: Clientes -->
@@ -241,10 +233,33 @@
   <div *ngIf="seccionActiva === 'ventas'" class="section">
     <div class="section-header">
       <h3>📊 Historial de Ventas</h3>
-      <button class="btn btn-success" (click)="cargarVentasDesdeBackend()" [disabled]="cargandoVentas">
-        <span class="icon">🔄</span>
-        {{ cargandoVentas ? 'Cargando...' : 'Actualizar Ventas' }}
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" (click)="cargarVentasDesdeBackend()" [disabled]="cargandoVentas">
+          <span class="icon">🔄</span>
+          {{ cargandoVentas ? 'Cargando...' : 'Actualizar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Búsqueda de venta por ID -->
+    <div class="busqueda-venta mb-3">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text">🔍</span>
+            <input 
+              type="number" 
+              class="form-control" 
+              [(ngModel)]="ventaIdBusqueda"
+              placeholder="Buscar venta por ID..."
+              (keyup.enter)="buscarVentaPorId()">
+            <button class="btn btn-primary" (click)="buscarVentaPorId()" [disabled]="!ventaIdBusqueda || cargandoVentaDetalle">
+              <span *ngIf="!cargandoVentaDetalle">Buscar</span>
+              <span *ngIf="cargandoVentaDetalle" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Filtro de cliente activo -->
@@ -265,99 +280,53 @@
       <p class="mt-3">Cargando ventas desde el servidor...</p>
     </div>
 
-    <!-- Lista de ventas -->
-    <div *ngIf="!cargandoVentas && ventasFiltradas.length > 0" class="ventas-list">
-      <div *ngFor="let venta of ventasFiltradas" class="venta-card">
-        <div class="venta-header">
-          <div>
-            <h5>Venta #{{ venta.id }}</h5>
-            <p class="text-muted mb-0">{{ venta.fecha | date:'dd/MM/yyyy' }}</p>
-          </div>
-          <div class="text-end">
-            <span class="badge" [ngClass]="{
-              'bg-success': venta.estado === 'Completada',
-              'bg-warning': venta.estado === 'Pendiente',
-              'bg-danger': venta.estado === 'Cancelada'
-            }">{{ venta.estado }}</span>
-            <h4 class="mt-2 mb-0">{{ formatearPrecio(venta.total) }}</h4>
-          </div>
-        </div>
-        
-        <div class="venta-body">
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <div class="detalle-item">
-                <span class="icon">👤</span>
-                <strong>Cliente:</strong> {{ venta.clienteNombre }}
+    <!-- Tabla compacta de ventas -->
+    <div *ngIf="!cargandoVentas && ventasFiltradas.length > 0" class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th style="width: 120px;">Fecha</th>
+            <th>Cliente</th>
+            <th class="text-center" style="width: 100px;">Items</th>
+            <th class="text-end" style="width: 150px;">Total</th>
+            <th class="text-center" style="width: 120px;">Estado</th>
+            <th class="text-center" style="width: 100px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of ventasFiltradas">
+            <td><strong>#{{ venta.id }}</strong></td>
+            <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="cliente-mini">
+                <strong>{{ venta.clienteNombre }}</strong>
               </div>
-              <div class="detalle-item" *ngIf="venta.vendedor">
-                <span class="icon">🏷️</span>
-                <strong>Vendedor:</strong> {{ venta.vendedor }}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="detalle-item">
-                <span class="icon">💳</span>
-                <strong>Método de pago:</strong> {{ venta.metodoPago }}
-              </div>
-              <div class="detalle-item" *ngIf="venta.notasVenta">
-                <span class="icon">📝</span>
-                <strong>Notas:</strong> {{ venta.notasVenta }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Items de la venta -->
-          <div class="items-section">
-            <h6 class="mb-2">📦 Productos ({{ venta.items.length }})</h6>
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th class="text-center">Cantidad</th>
-                    <th class="text-end">Precio Unit.</th>
-                    <th class="text-end">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of venta.items">
-                    <td>{{ item.producto.nombre }}</td>
-                    <td class="text-center">{{ item.cantidad }}</td>
-                    <td class="text-end">{{ formatearPrecio(item.producto.precio) }}</td>
-                    <td class="text-end">{{ formatearPrecio(item.subtotal) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Totales -->
-          <div class="totales-section">
-            <div class="row">
-              <div class="col-md-6 offset-md-6">
-                <div class="d-flex justify-content-between mb-2">
-                  <span>Subtotal:</span>
-                  <strong>{{ formatearPrecio(venta.subtotal) }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2" *ngIf="venta.descuento > 0">
-                  <span>Descuento:</span>
-                  <strong class="text-danger">-{{ formatearPrecio(venta.descuento) }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <span>Impuestos:</span>
-                  <strong>{{ formatearPrecio(venta.impuesto) }}</strong>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between">
-                  <h5>Total:</h5>
-                  <h5 class="text-success">{{ formatearPrecio(venta.total) }}</h5>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary">{{ venta.items.length }}</span>
+            </td>
+            <td class="text-end">
+              <strong class="text-success">{{ formatearPrecio(venta.total) }}</strong>
+            </td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="{
+                'bg-success': venta.estado === 'Completada',
+                'bg-warning': venta.estado === 'Pendiente',
+                'bg-danger': venta.estado === 'Cancelada'
+              }">{{ venta.estado }}</span>
+            </td>
+            <td class="text-center">
+              <button 
+                class="btn btn-sm btn-outline-primary"
+                (click)="verDetalleVenta(venta.id)"
+                title="Ver detalles">
+                👁️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Mensaje cuando no hay ventas -->
@@ -393,278 +362,314 @@
       <p class="mt-3">Cargando productos desde el servidor...</p>
     </div>
 
-    <!-- Filtros de productos -->
-    <div *ngIf="!cargandoProductos" class="filtros">
-      <div class="filtro-busqueda">
-        <input 
-          type="text" 
-          class="form-control"
-          [(ngModel)]="busquedaProductos"
-          (ngModelChange)="aplicarFiltros()"
-          placeholder="Buscar por nombre o código...">
-      </div>
-      <div class="filtro-categoria">
-        <select 
-          class="form-control"
-          [(ngModel)]="categoriaFiltro"
-          (ngModelChange)="aplicarFiltros()">
-          <option value="todas">Todas las categorías</option>
-          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Grid de productos -->
-    <div *ngIf="!cargandoProductos" class="productos-grid">
-      <div *ngFor="let producto of productosFiltrados" class="producto-card">
-        <div class="producto-header">
-          <span class="producto-codigo">{{ producto.codigo }}</span>
-          <span class="badge-stock" [ngClass]="getStockClass(producto.stock)">
-            {{ producto.stock }} unid.
-          </span>
-        </div>
-        <div class="producto-body">
-          <h4>{{ producto.nombre }}</h4>
-          <p class="producto-descripcion">{{ producto.descripcion }}</p>
-          <div class="producto-meta">
-            <span class="producto-categoria">{{ producto.categoria }}</span>
-            <span class="producto-proveedor" *ngIf="producto.proveedor">
-              🏢 {{ producto.proveedor }}
-            </span>
+    <!-- Contenedor principal con productos y carrito lateral -->
+    <div *ngIf="!cargandoProductos" class="productos-con-carrito">
+      <!-- Columna de productos -->
+      <div class="productos-columna">
+        <!-- Filtros de productos -->
+        <div class="filtros">
+          <div class="filtro-busqueda">
+            <input 
+              type="text" 
+              class="form-control"
+              [(ngModel)]="busquedaProductos"
+              (ngModelChange)="aplicarFiltros()"
+              placeholder="Buscar por nombre o código...">
+          </div>
+          <div class="filtro-categoria">
+            <select 
+              class="form-control"
+              [(ngModel)]="categoriaFiltro"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todas">Todas las categorías</option>
+              <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+            </select>
           </div>
         </div>
-        <div class="producto-footer">
-          <div class="producto-precio">{{ formatearPrecio(producto.precio) }}</div>
-          <div class="producto-acciones">
-            <div class="cantidad-controls">
-              <button 
-                class="btn-cantidad-ctrl"
-                (click)="decrementarCantidad(producto)"
-                [disabled]="producto.stock === 0 || !clienteVenta || (producto.cantidadAgregar || 1) <= 1"
-                title="Disminuir cantidad">
-                −
-              </button>
-              <span class="cantidad-display">{{ producto.cantidadAgregar || 1 }}</span>
-              <button 
-                class="btn-cantidad-ctrl"
-                (click)="incrementarCantidad(producto)"
-                [disabled]="producto.stock === 0 || !clienteVenta || (producto.cantidadAgregar || 1) >= producto.stock"
-                title="Aumentar cantidad">
-                +
-              </button>
-              <button 
-                class="btn-cantidad-ctrl btn-max"
-                (click)="agregarTodoStock(producto)"
-                [disabled]="producto.stock === 0 || !clienteVenta"
-                title="Agregar todo el stock">
-                MAX
-              </button>
+
+        <!-- Grid de productos -->
+        <div class="productos-grid">
+          <div *ngFor="let producto of productosFiltrados" class="producto-card">
+            <div class="producto-header">
+              <span class="producto-codigo">{{ producto.codigo }}</span>
+              <span class="badge-stock" [ngClass]="getStockClass(producto.stock)">
+                {{ producto.stock }} unid.
+              </span>
             </div>
-            <button 
-              class="btn btn-primary btn-sm"
-              [disabled]="producto.stock === 0 || !clienteVenta"
-              (click)="agregarAlCarrito(producto, producto.cantidadAgregar || 1); resetearCantidad(producto)"
-              [title]="!clienteVenta ? 'Seleccione un cliente primero' : ''">
-              {{ producto.stock === 0 ? 'Agotado' : '🛒 Agregar' }}
+            <div class="producto-body">
+              <h4>{{ producto.nombre }}</h4>
+              <p class="producto-descripcion">{{ producto.descripcion }}</p>
+              <div class="producto-meta">
+                <span class="producto-categoria">{{ producto.categoria }}</span>
+                <span class="producto-proveedor" *ngIf="producto.proveedor">
+                  🏢 {{ producto.proveedor }}
+                </span>
+              </div>
+            </div>
+            <div class="producto-footer">
+              <div class="producto-precio">{{ formatearPrecio(producto.precio) }}</div>
+              <div class="producto-acciones">
+                <div class="cantidad-controls">
+                  <button 
+                    class="btn-cantidad-ctrl"
+                    (click)="decrementarCantidad(producto)"
+                    [disabled]="producto.stock === 0 || !clienteVenta || (producto.cantidadAgregar || 1) <= 1"
+                    title="Disminuir cantidad">
+                    −
+                  </button>
+                  <span class="cantidad-display">{{ producto.cantidadAgregar || 1 }}</span>
+                  <button 
+                    class="btn-cantidad-ctrl"
+                    (click)="incrementarCantidad(producto)"
+                    [disabled]="producto.stock === 0 || !clienteVenta || (producto.cantidadAgregar || 1) >= producto.stock"
+                    title="Aumentar cantidad">
+                    +
+                  </button>
+                  <button 
+                    class="btn-cantidad-ctrl btn-max"
+                    (click)="agregarTodoStock(producto)"
+                    [disabled]="producto.stock === 0 || !clienteVenta"
+                    title="Agregar todo el stock">
+                    MAX
+                  </button>
+                </div>
+                <button 
+                  class="btn btn-primary btn-sm"
+                  [disabled]="producto.stock === 0 || !clienteVenta"
+                  (click)="agregarAlCarrito(producto, producto.cantidadAgregar || 1); resetearCantidad(producto)"
+                  [title]="!clienteVenta ? 'Seleccione un cliente primero' : ''">
+                  {{ producto.stock === 0 ? 'Agotado' : '🛒 Agregar' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="productosFiltrados.length === 0" class="mensaje-vacio">
+          No se encontraron productos disponibles
+        </div>
+      </div>
+
+      <!-- Aside del carrito (solo se muestra si hay cliente seleccionado) -->
+      <aside *ngIf="clienteVenta" class="carrito-aside">
+        <div class="carrito-sticky">
+          <!-- Header del carrito con info del cliente -->
+          <div class="carrito-header">
+            <div class="cliente-info-compacto">
+              <div class="cliente-avatar-small">{{ clienteVenta.nombre.charAt(0) }}</div>
+              <div class="cliente-datos-small">
+                <strong>{{ clienteVenta.nombre }}</strong>
+                <small>{{ clienteVenta.documento }}</small>
+              </div>
+            </div>
+            <button class="btn-cancelar-venta" (click)="cancelarVenta()" title="Cancelar venta">
+              ✖
             </button>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <div *ngIf="productosFiltrados.length === 0" class="mensaje-vacio">
-      No se encontraron productos disponibles
-    </div>
-  </div>
+          <!-- Título del carrito -->
+          <div class="carrito-titulo">
+            <h4>🛒 Carrito</h4>
+            <span class="badge-carrito" *ngIf="carrito.length > 0">{{ carrito.length }}</span>
+          </div>
 
-  <!-- Sección: Realizar Venta -->
-  <div *ngIf="seccionActiva === 'realizar-venta'">
-    <div class="section">
-      <div class="venta-info">
-        <div class="cliente-venta-card">
-          <h3>Cliente</h3>
-          <div class="cliente-venta-datos" *ngIf="clienteVenta">
-            <div class="cliente-avatar">{{ clienteVenta.nombre.charAt(0) }}</div>
-            <div>
-              <h4>{{ clienteVenta.nombre }}</h4>
-              <p>{{ clienteVenta.documento }} | {{ clienteVenta.telefono }}</p>
-              <p>{{ clienteVenta.direccion }}, {{ clienteVenta.ciudad }}</p>
+          <!-- Items del carrito -->
+          <div class="carrito-items-aside">
+            <div *ngIf="carrito.length === 0" class="carrito-vacio">
+              <p>No hay productos en el carrito</p>
+              <small>Agrega productos para continuar</small>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="carrito-container">
-        <div class="carrito-items">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Carrito de Compras</h3>
-            <span class="badge bg-primary" *ngIf="carrito.length > 0">
-              {{ carrito.length }} {{ carrito.length === 1 ? 'producto' : 'productos' }}
-            </span>
-          </div>
-          
-          <div *ngIf="carrito.length === 0" class="mensaje-vacio">
-            El carrito está vacío. Agregue productos desde la sección de "Productos Disponibles".
-          </div>
-
-          <div class="carrito-lista" *ngIf="carrito.length > 0">
-            <div class="carrito-item" *ngFor="let item of carrito">
+            <div *ngFor="let item of carrito" class="carrito-item-compacto">
               <div class="item-info">
-                <h4>{{ item.producto.nombre }}</h4>
-                <p class="item-codigo">{{ item.producto.codigo }}</p>
-                <p class="item-proveedor" *ngIf="item.producto.proveedor">
-                  🏢 {{ item.producto.proveedor }}
-                </p>
-                <p class="item-precio">{{ formatearPrecio(item.producto.precio) }} c/u</p>
+                <strong class="item-nombre">{{ item.producto.nombre }}</strong>
+                <small class="item-precio">{{ formatearPrecio(item.producto.precio) }} × {{ item.cantidad }}</small>
               </div>
-              
-              <div class="item-cantidad">
-                <button class="btn-cantidad" (click)="actualizarCantidad(item, item.cantidad - 1)">-</button>
-                <input type="number" 
-                       [(ngModel)]="item.cantidad" 
-                       (change)="actualizarCantidad(item, item.cantidad)"
-                       min="1" 
-                       [max]="item.producto.stock"
-                       class="cantidad-input">
-                <button class="btn-cantidad" (click)="actualizarCantidad(item, item.cantidad + 1)">+</button>
+              <div class="item-acciones">
+                <div class="item-cantidad">
+                  <button class="btn-qty" (click)="actualizarCantidad(item, item.cantidad - 1)">−</button>
+                  <span>{{ item.cantidad }}</span>
+                  <button class="btn-qty" (click)="actualizarCantidad(item, item.cantidad + 1)">+</button>
+                </div>
+                <div class="item-subtotal">{{ formatearPrecio(item.subtotal) }}</div>
+                <button class="btn-eliminar" (click)="eliminarDelCarrito(item)" title="Eliminar">🗑️</button>
               </div>
-              
-              <div class="item-subtotal">
-                <p class="subtotal-label">Subtotal</p>
-                <p class="subtotal-valor">{{ formatearPrecio(item.subtotal) }}</p>
-              </div>
-              
-              <button class="btn-eliminar-item" (click)="eliminarDelCarrito(item)">🗑️</button>
             </div>
           </div>
-        </div>
 
-        <div class="carrito-resumen" *ngIf="carrito.length > 0">
-          <h3>Resumen de Venta</h3>
-          
-          <div class="resumen-opciones">
-            <div class="form-group">
-              <label>Método de Pago</label>
-              <select [(ngModel)]="metodoPago" class="form-control">
+          <!-- Resumen de totales -->
+          <div class="carrito-totales" *ngIf="carrito.length > 0">
+            <div class="total-linea">
+              <span>Subtotal:</span>
+              <strong>{{ formatearPrecio(calcularSubtotal()) }}</strong>
+            </div>
+
+            <!-- Descuento -->
+            <div class="descuento-grupo">
+              <label>Descuento (%):</label>
+              <input 
+                type="number" 
+                class="form-control-small"
+                [(ngModel)]="descuentoPorcentaje"
+                min="0"
+                max="100"
+                placeholder="0">
+            </div>
+
+            <div class="total-linea" *ngIf="descuentoPorcentaje > 0">
+              <span>Descuento:</span>
+              <strong class="text-danger">-{{ formatearPrecio(calcularDescuento()) }}</strong>
+            </div>
+
+            <div class="total-linea">
+              <span>Impuesto (19%):</span>
+              <strong>{{ formatearPrecio(calcularImpuesto()) }}</strong>
+            </div>
+
+            <hr>
+
+            <div class="total-linea total-final">
+              <span>TOTAL:</span>
+              <strong class="total-precio">{{ formatearPrecio(calcularTotal()) }}</strong>
+            </div>
+          </div>
+
+          <!-- Método de pago y notas -->
+          <div class="carrito-opciones" *ngIf="carrito.length > 0">
+            <div class="form-group-compact">
+              <label>Método de pago:</label>
+              <select class="form-control-small" [(ngModel)]="metodoPago">
                 <option value="Efectivo">Efectivo</option>
                 <option value="Tarjeta">Tarjeta</option>
                 <option value="Transferencia">Transferencia</option>
               </select>
             </div>
 
-            <div class="form-group">
-              <label>Descuento (%)</label>
-              <input type="number" 
-                     [(ngModel)]="descuentoPorcentaje" 
-                     class="form-control"
-                     min="0" 
-                     max="100"
-                     step="1">
-            </div>
-
-            <div class="form-group">
-              <label>Notas</label>
-              <textarea [(ngModel)]="notasVenta" 
-                        class="form-control" 
-                        rows="2"
-                        placeholder="Notas adicionales..."></textarea>
+            <div class="form-group-compact">
+              <label>Notas:</label>
+              <textarea 
+                class="form-control-small"
+                [(ngModel)]="notasVenta"
+                rows="2"
+                placeholder="Notas opcionales..."></textarea>
             </div>
           </div>
 
-          <div class="resumen-totales">
-            <div class="total-linea">
-              <span>Subtotal:</span>
-              <span class="total-valor">{{ formatearPrecio(calcularSubtotal()) }}</span>
-            </div>
-            
-            <div class="total-linea" *ngIf="descuentoPorcentaje > 0">
-              <span>Descuento ({{ descuentoPorcentaje }}%):</span>
-              <span class="total-valor descuento">-{{ formatearPrecio(calcularDescuento()) }}</span>
-            </div>
-            
-            <div class="total-linea">
-              <span>IVA (19%):</span>
-              <span class="total-valor">{{ formatearPrecio(calcularImpuesto()) }}</span>
-            </div>
-            
-            <div class="total-linea total-final">
-              <span>TOTAL:</span>
-              <span class="total-valor">{{ formatearPrecio(calcularTotal()) }}</span>
-            </div>
-          </div>
-
-          <div class="resumen-acciones">
+          <!-- Botón de procesar venta -->
+          <div class="carrito-acciones-finales">
             <button 
-              class="btn btn-success btn-block btn-lg" 
-              (click)="procesarVenta()"
-              [disabled]="procesandoVenta || carrito.length === 0"
-              title="Presiona Enter para procesar (Ctrl+Enter)">
-              <span *ngIf="!procesandoVenta">
-                <strong>✓ Procesar Venta</strong>
-                <div class="mt-1" style="font-size: 1.2em;">
-                  {{ formatearPrecio(calcularTotal()) }}
-                </div>
-              </span>
-              <span *ngIf="procesandoVenta">
-                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                Procesando...
-              </span>
-            </button>
-            <button 
-              class="btn btn-danger btn-block mt-2" 
-              (click)="cancelarVenta()"
-              [disabled]="procesandoVenta">
-              ✕ Cancelar Venta
+              class="btn btn-success btn-block"
+              [disabled]="carrito.length === 0 || procesandoVenta"
+              (click)="procesarVenta()">
+              <span *ngIf="!procesandoVenta">💳 Procesar Venta</span>
+              <span *ngIf="procesandoVenta">⏳ Procesando...</span>
             </button>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
+  </div>
 
-    <!-- Lista de ventas del servidor -->
-    <div *ngIf="ventas.length > 0" class="mt-4">
-      <h4>📊 Ventas Registradas ({{ ventas.length }})</h4>
-      <div class="table-responsive">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Vendedor</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let venta of ventas">
-              <td>#{{ venta.id }}</td>
-              <td>{{ venta.fecha }}</td>
-              <td>{{ venta.clienteNombre }}</td>
-              <td>{{ venta.vendedor }}</td>
-              <td>{{ venta.items.length }}</td>
-              <td>{{ formatearPrecio(venta.total) }}</td>
-              <td>
-                <span class="badge" [ngClass]="{
-                  'badge-success': venta.estado === 'Completada',
-                  'badge-warning': venta.estado === 'Pendiente',
-                  'badge-danger': venta.estado === 'Cancelada'
-                }">
-                  {{ venta.estado }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <!-- Sección: Realizar Venta (DESHABILITADA - Funcionalidad movida al aside del carrito) -->
+  <!--
+  <div *ngIf="seccionActiva === 'realizar-venta'">
+    (Contenido comentado - ahora se usa el aside en la sección de productos)
+  </div>
+  -->
+</div>
 
-    <div *ngIf="cargandoVentas" class="text-center py-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Cargando...</span>
+<!-- Modal de Detalle de Venta -->
+<div class="modal fade" id="modalDetalleVenta" tabindex="-1" *ngIf="ventaDetalle">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🧾 Detalle de Venta #{{ ventaDetalle.id }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDetalle()"></button>
       </div>
-      <p class="mt-2">Cargando ventas del servidor...</p>
+      <div class="modal-body">
+        <!-- Información de la venta -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="info-item">
+              <span class="text-muted">Fecha:</span>
+              <strong>{{ ventaDetalle.fecha | date:'dd/MM/yyyy HH:mm' }}</strong>
+            </div>
+            <div class="info-item">
+              <span class="text-muted">Cliente:</span>
+              <strong>{{ ventaDetalle.clienteNombre }}</strong>
+            </div>
+            <div class="info-item" *ngIf="ventaDetalle.vendedor">
+              <span class="text-muted">Vendedor:</span>
+              <strong>{{ ventaDetalle.vendedor }}</strong>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-item" *ngIf="ventaDetalle.metodoPago">
+              <span class="text-muted">Método de pago:</span>
+              <strong>{{ ventaDetalle.metodoPago }}</strong>
+            </div>
+            <div class="info-item">
+              <span class="text-muted">Estado:</span>
+              <span class="badge" [ngClass]="{
+                'bg-success': ventaDetalle.estado === 'Completada',
+                'bg-warning': ventaDetalle.estado === 'Pendiente',
+                'bg-danger': ventaDetalle.estado === 'Cancelada'
+              }">{{ ventaDetalle.estado }}</span>
+            </div>
+            <div class="info-item" *ngIf="ventaDetalle.notasVenta">
+              <span class="text-muted">Notas:</span>
+              <p class="mb-0">{{ ventaDetalle.notasVenta }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items de la venta -->
+        <h6 class="mb-3">📦 Productos</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-end">Precio Unit.</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of ventaDetalle.items">
+                <td>{{ item.producto.nombre }}</td>
+                <td class="text-center">{{ item.cantidad }}</td>
+                <td class="text-end">{{ formatearPrecio(item.producto.precio) }}</td>
+                <td class="text-end">{{ formatearPrecio(item.subtotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="totales-modal">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <strong>{{ formatearPrecio(ventaDetalle.subtotal) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2" *ngIf="ventaDetalle.descuento > 0">
+            <span>Descuento:</span>
+            <strong class="text-danger">-{{ formatearPrecio(ventaDetalle.descuento) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Impuestos (19%):</span>
+            <strong>{{ formatearPrecio(ventaDetalle.impuesto) }}</strong>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <h5>Total:</h5>
+            <h5 class="text-success">{{ formatearPrecio(ventaDetalle.total) }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
+      </div>
     </div>
   </div>
 </div>

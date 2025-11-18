@@ -102,6 +102,11 @@ export class VentasComponent implements OnInit {
   cargandoClientes = false;
   cargandoProductos = false;
   procesandoVenta = false;
+  
+  // Búsqueda y detalle de venta por ID
+  ventaIdBusqueda: number | null = null;
+  ventaDetalle: Venta | null = null;
+  cargandoVentaDetalle = false;
 
   constructor(
     private salesService: SalesService,
@@ -194,33 +199,44 @@ export class VentasComponent implements OnInit {
         console.log('✅ Ventas cargadas desde el backend:', ventasBackend);
         
         // Mapear las ventas del backend al formato local
-        this.ventas = ventasBackend.map(venta => ({
-          id: venta.id?.toString() || '',
-          fecha: venta.date || '',
-          clienteId: venta.customer_id?.toString() || '',
-          clienteNombre: `Cliente #${venta.customer_id}`, // El backend no devuelve el nombre
-          items: (venta.sale_items || []).map(item => ({
-            producto: {
-              id: item.product_id?.toString() || '',
-              codigo: '',
-              nombre: `Producto #${item.product_id}`,
-              descripcion: '',
-              precio: item.price || 0,
-              stock: 0,
-              categoria: '',
-              proveedor: ''
-            },
-            cantidad: item.quantity || 0,
-            subtotal: item.total_item || 0
-          })),
-          subtotal: venta.total || 0,
-          descuento: 0,
-          impuesto: 0,
-          total: venta.total || 0,
-          metodoPago: 'Efectivo',
-          estado: this.mapearEstadoEntrega(venta.delivery_status),
-          vendedor: `Vendedor #${venta.seller_id}`
-        }));
+        this.ventas = ventasBackend.map(venta => {
+          // Buscar el cliente por ID para obtener su nombre
+          const cliente = this.clientes.find(c => c.id === venta.customer_id?.toString());
+          
+          // Buscar información de productos para los items
+          const items = (venta.sale_items || []).map(item => {
+            const producto = this.productos.find(p => p.id === item.product_id?.toString());
+            return {
+              producto: {
+                id: item.product_id?.toString() || '',
+                codigo: producto?.codigo || `PROD-${item.product_id}`,
+                nombre: producto?.nombre || `Producto #${item.product_id}`,
+                descripcion: producto?.descripcion || '',
+                precio: item.price || 0,
+                stock: producto?.stock || 0,
+                categoria: producto?.categoria || '',
+                proveedor: producto?.proveedor || ''
+              },
+              cantidad: item.quantity || 0,
+              subtotal: item.total_item || 0
+            };
+          });
+          
+          return {
+            id: venta.id?.toString() || '',
+            fecha: venta.date || '',
+            clienteId: venta.customer_id?.toString() || '',
+            clienteNombre: cliente?.nombre || `Cliente #${venta.customer_id}`,
+            items: items,
+            subtotal: venta.total || 0,
+            descuento: 0,
+            impuesto: 0,
+            total: venta.total || 0,
+            metodoPago: 'Efectivo',
+            estado: this.mapearEstadoEntrega(venta.delivery_status),
+            vendedor: `Vendedor #${venta.seller_id}`
+          };
+        });
         
         this.cargandoVentas = false;
         this.mensaje = `${this.ventas.length} ventas cargadas desde el servidor`;
@@ -517,8 +533,11 @@ export class VentasComponent implements OnInit {
     this.metodoPago = 'Efectivo';
     this.descuentoPorcentaje = 0;
     this.notasVenta = '';
-    this.cambiarSeccion('realizar-venta');
-    this.mensaje = `Venta iniciada para ${cliente.nombre}`;
+    this.cambiarSeccion('productos'); // Navegar a productos en lugar de realizar-venta
+    this.mensaje = `Venta iniciada para ${cliente.nombre}. Seleccione productos para agregar al carrito.`;
+    
+    // Limpiar mensaje después de 3 segundos
+    setTimeout(() => this.mensaje = '', 3000);
   }
 
   incrementarCantidad(producto: Producto): void {
@@ -717,11 +736,11 @@ export class VentasComponent implements OnInit {
       next: (ventaCreada) => {
         console.log('✅ Venta creada en el backend:', ventaCreada);
         
-        // Actualizar productos en localStorage para sincronizar con bodega
-        localStorage.setItem('productos', JSON.stringify(this.productos));
-        
         const total = this.calcularTotal();
         this.mensaje = `¡Venta #${ventaCreada.id} procesada exitosamente! Total: ${this.formatearPrecio(total)}`;
+        
+        // Recargar productos desde el backend para obtener el stock actualizado
+        this.cargarProductosDesdeBackend();
         
         // Limpiar carrito
         this.carrito = [];
@@ -819,6 +838,11 @@ export class VentasComponent implements OnInit {
   verHistorialCliente(cliente: Cliente): void {
     this.clienteVentasFiltro = cliente;
     this.cambiarSeccion('ventas');
+    
+    // Mensaje informativo
+    const ventasCliente = this.obtenerVentasCliente(cliente.id);
+    this.mensaje = `Mostrando ${ventasCliente.length} venta(s) de ${cliente.nombre}`;
+    setTimeout(() => this.mensaje = '', 3000);
   }
 
   /**
@@ -826,6 +850,148 @@ export class VentasComponent implements OnInit {
    */
   volverAlHistorialCompleto(): void {
     this.clienteVentasFiltro = null;
+    this.mensaje = `Mostrando todas las ventas (${this.ventas.length})`;
+    setTimeout(() => this.mensaje = '', 3000);
+  }
+
+  /**
+   * Buscar venta por ID usando el servicio del backend
+   */
+  buscarVentaPorId(): void {
+    if (!this.ventaIdBusqueda) {
+      this.error = 'Por favor ingrese un ID de venta';
+      setTimeout(() => this.error = '', 3000);
+      return;
+    }
+
+    this.cargandoVentaDetalle = true;
+    this.error = '';
+
+    this.salesService.getSaleById(this.ventaIdBusqueda).subscribe({
+      next: (saleData) => {
+        console.log('✅ Venta obtenida del backend:', saleData);
+        
+        // Mapear la venta del backend a formato local
+        const cliente = this.clientes.find(c => c.id === saleData.customer_id?.toString()) || {
+          id: saleData.customer_id?.toString() || '0',
+          nombre: `Cliente #${saleData.customer_id}`,
+          documento: '',
+          email: '',
+          telefono: '',
+          direccion: '',
+          ciudad: '',
+          tipoCliente: 'Nuevo' as const
+        };
+
+        const items: ItemCarrito[] = (saleData.sale_items || []).map(item => {
+          const producto = this.productos.find(p => p.id === item.product_id?.toString()) || {
+            id: item.product_id?.toString() || '0',
+            codigo: '',
+            nombre: `Producto #${item.product_id}`,
+            descripcion: '',
+            precio: item.price || 0,
+            stock: 0,
+            categoria: '',
+            proveedor: ''
+          };
+
+          return {
+            producto: producto,
+            cantidad: item.quantity,
+            subtotal: item.total_item || (item.price || 0) * item.quantity
+          };
+        });
+
+        const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+        const descuento = 0;
+        const impuesto = subtotal * 0.19;
+        const total = saleData.total || subtotal + impuesto - descuento;
+
+        this.ventaDetalle = {
+          id: saleData.id?.toString() || '0',
+          fecha: saleData.date || new Date().toISOString(),
+          clienteId: cliente.id,
+          clienteNombre: cliente.nombre,
+          items: items,
+          subtotal: subtotal,
+          descuento: descuento,
+          impuesto: impuesto,
+          total: total,
+          metodoPago: 'Efectivo',
+          estado: 'Completada',
+          vendedor: `Vendedor #${saleData.seller_id}`,
+          notasVenta: saleData.comments
+        };
+
+        this.cargandoVentaDetalle = false;
+        this.abrirModalDetalle();
+      },
+      error: (error) => {
+        console.error('❌ Error al buscar venta:', error);
+        this.cargandoVentaDetalle = false;
+        
+        if (error.status === 404) {
+          this.error = `No se encontró la venta con ID ${this.ventaIdBusqueda}`;
+        } else if (error.status === 0) {
+          this.error = 'No se pudo conectar al servidor';
+        } else {
+          this.error = `Error al buscar la venta: ${error.message || 'Error desconocido'}`;
+        }
+        
+        setTimeout(() => this.error = '', 5000);
+      }
+    });
+  }
+
+  /**
+   * Ver detalle de una venta desde la tabla
+   */
+  verDetalleVenta(ventaId: string): void {
+    // Buscar la venta en el array local
+    const venta = this.ventas.find(v => v.id === ventaId);
+    if (venta) {
+      this.ventaDetalle = venta;
+      this.abrirModalDetalle();
+    }
+  }
+
+  /**
+   * Abrir modal de detalle
+   */
+  abrirModalDetalle(): void {
+    const modalElement = document.getElementById('modalDetalleVenta');
+    if (modalElement) {
+      modalElement.classList.add('show');
+      modalElement.style.display = 'block';
+      document.body.classList.add('modal-open');
+      
+      // Crear backdrop
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'modalBackdrop';
+      document.body.appendChild(backdrop);
+    }
+  }
+
+  /**
+   * Cerrar modal de detalle
+   */
+  cerrarModalDetalle(): void {
+    const modalElement = document.getElementById('modalDetalleVenta');
+    if (modalElement) {
+      modalElement.classList.remove('show');
+      modalElement.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      
+      // Remover backdrop
+      const backdrop = document.getElementById('modalBackdrop');
+      if (backdrop) {
+        backdrop.remove();
+      }
+    }
+    
+    this.ventaDetalle = null;
+    this.ventaIdBusqueda = null;
   }
 
   /**
