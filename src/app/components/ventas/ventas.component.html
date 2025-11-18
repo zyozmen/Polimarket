@@ -496,7 +496,12 @@
 
       <div class="carrito-container">
         <div class="carrito-items">
-          <h3>Carrito de Compras</h3>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Carrito de Compras</h3>
+            <span class="badge bg-primary" *ngIf="carrito.length > 0">
+              {{ carrito.length }} {{ carrito.length === 1 ? 'producto' : 'productos' }}
+            </span>
+          </div>
           
           <div *ngIf="carrito.length === 0" class="mensaje-vacio">
             El carrito está vacío. Agregue productos desde la sección de "Productos Disponibles".
@@ -589,10 +594,26 @@
           </div>
 
           <div class="resumen-acciones">
-            <button class="btn btn-success btn-block" (click)="procesarVenta()">
-              ✓ Procesar Venta
+            <button 
+              class="btn btn-success btn-block btn-lg" 
+              (click)="procesarVenta()"
+              [disabled]="procesandoVenta || carrito.length === 0"
+              title="Presiona Enter para procesar (Ctrl+Enter)">
+              <span *ngIf="!procesandoVenta">
+                <strong>✓ Procesar Venta</strong>
+                <div class="mt-1" style="font-size: 1.2em;">
+                  {{ formatearPrecio(calcularTotal()) }}
+                </div>
+              </span>
+              <span *ngIf="procesandoVenta">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Procesando...
+              </span>
             </button>
-            <button class="btn btn-danger btn-block" (click)="cancelarVenta()">
+            <button 
+              class="btn btn-danger btn-block mt-2" 
+              (click)="cancelarVenta()"
+              [disabled]="procesandoVenta">
               ✕ Cancelar Venta
             </button>
           </div>

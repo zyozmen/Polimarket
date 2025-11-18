@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { SalesService } from '../../services/sales.service';
 import { CustomersService, Customer } from '../../services/customers.service';
 import { ProductsService, Product } from '../../services/products.service';
@@ -101,6 +101,7 @@ export class VentasComponent implements OnInit {
   cargandoVentas = false;
   cargandoClientes = false;
   cargandoProductos = false;
+  procesandoVenta = false;
 
   constructor(
     private salesService: SalesService,
@@ -682,59 +683,90 @@ export class VentasComponent implements OnInit {
   procesarVenta(): void {
     if (!this.clienteVenta) {
       this.error = 'Debe seleccionar un cliente';
+      setTimeout(() => this.error = '', 3000);
       return;
     }
 
     if (this.carrito.length === 0) {
       this.error = 'El carrito está vacío';
+      setTimeout(() => this.error = '', 3000);
       return;
     }
 
-    // Crear la venta (el stock ya está actualizado visualmente)
-    const venta: Venta = {
-      id: Date.now().toString(),
-      fecha: new Date().toISOString(),
-      clienteId: this.clienteVenta.id,
-      clienteNombre: this.clienteVenta.nombre,
-      items: [...this.carrito],
-      subtotal: this.calcularSubtotal(),
-      descuento: this.calcularDescuento(),
-      impuesto: this.calcularImpuesto(),
-      total: this.calcularTotal(),
-      metodoPago: this.metodoPago,
-      estado: 'Completada',
-      vendedor: localStorage.getItem('token') || 'Sistema'
+    this.procesandoVenta = true;
+    this.error = '';
+
+    // Preparar datos para el backend
+    const saleRequest = {
+      sale: {
+        customer_id: parseInt(this.clienteVenta.id),
+        seller_id: 1, // ID fijo por ahora, se puede mejorar con autenticación real
+        date: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+        comments: this.notasVenta || `Venta procesada - ${this.metodoPago}`,
+        sale_items_attributes: this.carrito.map(item => ({
+          product_id: parseInt(item.producto.id),
+          quantity: item.cantidad,
+          comment: `${item.producto.nombre}`,
+          discount: this.descuentoPorcentaje
+        }))
+      }
     };
 
-    // Guardar productos con stock actualizado en localStorage (sincroniza con bodega)
-    localStorage.setItem('productos', JSON.stringify(this.productos));
-
-    // Guardar venta
-    this.ventas.push(venta);
-    localStorage.setItem('ventas', JSON.stringify(this.ventas));
-
-    // Actualizar tipo de cliente si es necesario (solo localmente, no afecta el backend)
-    if (this.clienteVenta.tipoCliente === 'Nuevo') {
-      const cliente = this.clientes.find(c => c.id === this.clienteVenta!.id);
-      if (cliente) {
-        cliente.tipoCliente = 'Regular';
-        // Ya no guardamos en localStorage, el backend maneja la persistencia
+    // Enviar al backend
+    this.salesService.createSale(saleRequest).subscribe({
+      next: (ventaCreada) => {
+        console.log('✅ Venta creada en el backend:', ventaCreada);
+        
+        // Actualizar productos en localStorage para sincronizar con bodega
+        localStorage.setItem('productos', JSON.stringify(this.productos));
+        
+        const total = this.calcularTotal();
+        this.mensaje = `¡Venta #${ventaCreada.id} procesada exitosamente! Total: ${this.formatearPrecio(total)}`;
+        
+        // Limpiar carrito
+        this.carrito = [];
+        this.clienteVenta = null;
+        this.metodoPago = 'Efectivo';
+        this.descuentoPorcentaje = 0;
+        this.notasVenta = '';
+        this.procesandoVenta = false;
+        
+        // Recargar ventas desde el servidor
+        this.cargarVentasDesdeBackend();
+        
+        // Volver a clientes después de 2 segundos
+        setTimeout(() => {
+          this.cambiarSeccion('clientes');
+          this.limpiarMensajes();
+        }, 2000);
+      },
+      error: (error) => {
+        console.error('❌ Error al crear venta:', error);
+        this.procesandoVenta = false;
+        
+        if (error.status === 404) {
+          this.error = 'El servidor está despertando... Intenta de nuevo en 1-2 minutos.';
+        } else if (error.status === 0) {
+          this.error = 'No se pudo conectar al servidor. Verifica tu conexión.';
+        } else if (error.error?.errors) {
+          // Errores de validación del backend
+          const errores = error.error.errors.join(', ');
+          this.error = `Error de validación: ${errores}`;
+        } else {
+          this.error = `Error al procesar la venta: ${error.message || 'Error desconocido'}`;
+        }
+        
+        // Restaurar stock si hubo error
+        this.carrito.forEach(item => {
+          const productoEnLista = this.productos.find(p => p.id === item.producto.id);
+          if (productoEnLista) {
+            productoEnLista.stock += item.cantidad;
+          }
+        });
+        
+        setTimeout(() => this.error = '', 5000);
       }
-    }
-
-    this.mensaje = `¡Venta procesada exitosamente! Total: ${this.formatearPrecio(venta.total)}`;
-    
-    // Limpiar carrito y volver a clientes
-    this.carrito = [];
-    this.clienteVenta = null;
-    this.metodoPago = 'Efectivo';
-    this.descuentoPorcentaje = 0;
-    this.notasVenta = '';
-    
-    setTimeout(() => {
-      this.cambiarSeccion('clientes');
-      this.limpiarMensajes();
-    }, 2000);
+    });
   }
 
   cancelarVenta(): void {
@@ -794,5 +826,28 @@ export class VentasComponent implements OnInit {
    */
   volverAlHistorialCompleto(): void {
     this.clienteVentasFiltro = null;
+  }
+
+  /**
+   * Atajos de teclado para agilizar el proceso de venta
+   */
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    // Solo funciona en la sección de realizar venta
+    if (this.seccionActiva !== 'realizar-venta') return;
+    
+    // Ctrl+Enter o F2: Procesar venta
+    if ((event.ctrlKey && event.key === 'Enter') || event.key === 'F2') {
+      event.preventDefault();
+      if (!this.procesandoVenta && this.carrito.length > 0 && this.clienteVenta) {
+        this.procesarVenta();
+      }
+    }
+    
+    // Esc: Cancelar venta
+    if (event.key === 'Escape' && !this.procesandoVenta) {
+      event.preventDefault();
+      this.cancelarVenta();
+    }
   }
 }

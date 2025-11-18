@@ -493,6 +493,28 @@
   justify-content: space-between;
   align-items: center;
   background-color: #fffbf0;
+  transition: all 0.3s ease;
+}
+
+.producto-card-small.tiene-solicitud {
+  border-color: #17a2b8;
+  background: linear-gradient(135deg, #e8f4f8 0%, #f0f9fb 100%);
+  opacity: 1;
+}
+
+.producto-card-small.tiene-solicitud::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #17a2b8 0%, #138496 100%);
+  border-radius: 8px 0 0 8px;
+}
+
+.producto-card-small {
+  position: relative;
 }
 
 .producto-info-small strong {
@@ -504,6 +526,31 @@
 .producto-info-small small {
   color: #666;
   font-size: 0.85rem;
+}
+
+.solicitud-activa-item {
+  padding: 0.25rem 0;
+  border-left: 2px solid #17a2b8;
+  padding-left: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.solicitud-activa-item small {
+  font-size: 0.8rem;
+}
+
+.badge-sm {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  margin-left: 0.25rem;
+}
+
+.form-text.text-muted {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fff3cd;
+  border-left: 3px solid #ffc107;
+  border-radius: 4px;
 }
 
 .stock-detail {

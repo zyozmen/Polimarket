@@ -37,7 +37,7 @@ Estado de integración de los servicios REST con el backend y APIs externas.
 
 ### 3. **Sales Service** (`sales.service.ts`)
 - **Backend:** `https://ventas-al0w.onrender.com/sales` (vía proxy `/ventas-api`)
-- **Estado:** ✅ **INTEGRADO CON UI COMPLETA**
+- **Estado:** ✅ **COMPLETAMENTE INTEGRADO**
 - **Componente:** `ventas.component.ts`
 - **Funcionalidades integradas:**
   - ✅ Listar Ventas (`GET /sales`)
@@ -52,7 +52,13 @@ Estado de integración de los servicios REST con el backend y APIs externas.
   - ✅ **Botón "Ver Historial"** en cada tarjeta de cliente
   - ✅ **Alerta contextual** mostrando cliente filtrado
   - ✅ **Botón para volver** a ver todas las ventas
-  - ❌ Crear venta (servicio listo, UI pendiente)
+  - ✅ **Crear venta** (`POST /sales`) con integración completa
+  - ✅ **Procesamiento ágil**: Actualización visual instantánea de stock
+  - ✅ **Indicador de carga** durante procesamiento
+  - ✅ **Recarga automática** del historial después de crear
+  - ✅ **Atajos de teclado**: Ctrl+Enter/F2 para procesar, Esc para cancelar
+  - ✅ **Total en botón** para decisión rápida
+  - ✅ **Manejo robusto de errores** con mensajes contextuales
   - ❌ Obtener venta por ID (servicio listo, UI pendiente)
 
 ---
@@ -94,7 +100,7 @@ Estado de integración de los servicios REST con el backend y APIs externas.
 |----------|---------|--------------|--------|-----------|
 | **RRHH API** | ✅ Externo | ✅ Sí | ✅ **COMPLETO** | - |
 | **Customers** | ✅ Rails | ✅ Sí | ✅ **COMPLETO** | - |
-| **Sales** | ✅ Rails | ✅ Sí | ✅ **Listar + Filtrar** | Media |
+| **Sales** | ✅ Rails | ✅ Sí | ✅ **COMPLETO** | - |
 | **Products** | ✅ Rails | ✅ Sí | ✅ **INTEGRADO** | - |
 | **Deliveries** | ✅ Rails | ❌ No | ⚠️ **Pendiente** | Alta |
 
@@ -124,7 +130,17 @@ Estado de integración de los servicios REST con el backend y APIs externas.
    - [x] Mostrar alerta contextual con cliente filtrado
    - [x] Botón para volver a ver todas las ventas
 
-4. **Integrar Deliveries Service en Entregas**
+4. **~~Integrar creación de ventas con backend~~** ✅ **COMPLETADO**
+   - [x] Modificar `procesarVenta()` para usar `SalesService.createSale()`
+   - [x] Mapear datos del carrito al formato del backend
+   - [x] Agregar indicador de carga (`procesandoVenta`)
+   - [x] Mantener actualización visual del stock para experiencia ágil
+   - [x] Recarga automática del historial después de crear
+   - [x] Manejo robusto de errores con mensajes contextuales
+   - [x] Atajos de teclado (Ctrl+Enter, F2, Esc)
+   - [x] Total visible en botón para decisión rápida
+
+5. **Integrar Deliveries Service en Entregas**
    - [ ] Modificar `entregas.component.ts` para usar `DeliveriesService.getDeliveries()`
    - [ ] Implementar botones de acción (Confirmar, Cancelar, En Progreso)
    - [ ] Actualizar estados en tiempo real
@@ -190,10 +206,12 @@ export const environment = {
 
 - **RRHH API** está completamente funcional con manejo de errores personalizado y actualización automática de GUI
 - **Proxy CORS** configurado con patrón consistente para ambas APIs (`-api` + `pathRewrite`)
-- **Sales** tiene UI completa con visualización, filtrado por cliente y pestaña dedicada
+- **Sales** completamente integrado: listar, filtrar por cliente y crear con experiencia ágil
+- **Atajos de teclado** implementados para agilizar ventas (Ctrl+Enter/F2/Esc)
 - **Customers** totalmente integrado con CRUD completo
 - **Products** integrado en módulo de ventas con carga desde backend y respaldo localStorage
 - **Filtrado de ventas** permite ver historial específico de cada cliente con navegación contextual
+- **Experiencia ágil de venta**: actualización visual instantánea, total en botón, loading states
 - **Deliveries** tiene servicio completo pero NO está conectado a la UI
 - Módulos auxiliares (bodega, entregas, proveedores) todavía usan **localStorage**
 - Login y autenticación siguen usando **localStorage** (sin cambios)
@@ -202,4 +220,4 @@ export const environment = {
 
 **Última actualización:** 17 de noviembre de 2025  
 **Estado general:** 4/5 servicios completamente integrados (80%)  
-**Total endpoints con UI:** 15 de 18 (83%)
+**Total endpoints con UI:** 16 de 18 (89%)

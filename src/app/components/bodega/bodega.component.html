@@ -227,18 +227,42 @@
       <div class="productos-grid-small">
         <div 
           *ngFor="let producto of getProductosStockBajo()" 
-          class="producto-card-small">
+          class="producto-card-small"
+          [class.tiene-solicitud]="tieneSolicitudEnCurso(producto.id)">
           <div class="producto-info-small">
-            <strong>{{ producto.nombre }}</strong>
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <strong>{{ producto.nombre }}</strong>
+              <span 
+                *ngIf="getSolicitudesEnCurso(producto.id).length > 0" 
+                class="badge bg-info text-dark ms-2"
+                [title]="'Tiene ' + getSolicitudesEnCurso(producto.id).length + ' solicitud(es) en curso'">
+                📦 {{ getSolicitudesEnCurso(producto.id).length }} Solicitud(es)
+              </span>
+            </div>
             <div class="stock-detail">
               <span class="stock-critico">Stock: {{ producto.stock }}</span>
               <span> / Mínimo: {{ producto.stockMinimo }}</span>
             </div>
-            <small>Proveedor: {{ producto.proveedor }}</small>
+            <small>Proveedor principal: {{ producto.proveedor }}</small>
+            
+            <!-- Lista de solicitudes activas por proveedor -->
+            <div *ngIf="getSolicitudesEnCurso(producto.id).length > 0" class="mt-2">
+              <small class="text-muted d-block mb-1"><strong>Solicitudes activas:</strong></small>
+              <div *ngFor="let solicitud of getSolicitudesEnCurso(producto.id)" class="solicitud-activa-item">
+                <small class="text-muted">
+                  • <strong>{{ solicitud.proveedor }}</strong>: {{ solicitud.cantidad }} unidades 
+                  <span class="badge badge-sm" 
+                    [ngClass]="solicitud.estado === 'Pendiente' ? 'bg-warning' : 'bg-success'">
+                    {{ solicitud.estado }}
+                  </span>
+                </small>
+              </div>
+            </div>
           </div>
           <button 
             class="btn btn-warning btn-sm"
-            (click)="abrirFormSolicitud(producto)">
+            (click)="abrirFormSolicitud(producto)"
+            title="Crear solicitud a otro proveedor">
             📫 Solicitar
           </button>
         </div>
@@ -288,10 +312,22 @@
             name="proveedor"
             required>
             <option value="">Seleccione un proveedor</option>
-            <option *ngFor="let prov of proveedores" [value]="prov.id" [disabled]="!prov.activo">
-              {{ prov.nombre }} {{ !prov.activo ? '(Inactivo)' : '' }}
+            <option 
+              *ngFor="let prov of proveedores" 
+              [value]="prov.id" 
+              [disabled]="!prov.activo || tieneSolicitudEnCurso(productoSeleccionado.id, prov.id)">
+              {{ prov.nombre }}
+              <span *ngIf="!prov.activo"> (Inactivo)</span>
+              <span *ngIf="tieneSolicitudEnCurso(productoSeleccionado.id, prov.id)"> 
+                ✓ (Ya tiene solicitud activa)
+              </span>
             </option>
           </select>
+          <small class="form-text text-muted" *ngIf="getProveedoresConSolicitud(productoSeleccionado.id).length > 0">
+            ⚠️ Este producto ya tiene solicitudes activas con: 
+            <strong>{{ getProveedoresConSolicitud(productoSeleccionado.id).length }}</strong> proveedor(es).
+            Selecciona un proveedor diferente.
+          </small>
         </div>
 
         <div class="form-group">

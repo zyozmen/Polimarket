@@ -226,18 +226,20 @@ export class BodegaComponent implements OnInit {
       return;
     }
 
-    // ⚠️ VALIDACIÓN: Verificar si ya existe una solicitud pendiente o aprobada para este producto
+    // ⚠️ VALIDACIÓN: Verificar si ya existe una solicitud pendiente o aprobada para este producto CON ESTE PROVEEDOR
     const solicitudesGuardadas = localStorage.getItem('solicitudes');
     const solicitudesExistentes: SolicitudProveedor[] = solicitudesGuardadas ? JSON.parse(solicitudesGuardadas) : [];
     
-    const solicitudPendiente = solicitudesExistentes.find(s => 
+    const solicitudDuplicada = solicitudesExistentes.find(s => 
       s.productoId === this.productoSeleccionado!.id && 
+      s.proveedorId === this.nuevaSolicitud.proveedorId &&
       (s.estado === 'Pendiente' || s.estado === 'Aprobada')
     );
 
-    if (solicitudPendiente) {
-      this.error = `Ya existe una solicitud ${solicitudPendiente.estado.toLowerCase()} para este producto. ` +
-                   `Por favor espere a que sea procesada antes de crear una nueva solicitud.`;
+    if (solicitudDuplicada) {
+      const proveedor = this.proveedores.find(p => p.id === this.nuevaSolicitud.proveedorId);
+      this.error = `Ya existe una solicitud ${solicitudDuplicada.estado.toLowerCase()} para este producto con el proveedor "${proveedor?.nombre || 'seleccionado'}". ` +
+                   `Puedes crear una solicitud con otro proveedor si lo deseas.`;
       return;
     }
 
@@ -260,7 +262,7 @@ export class BodegaComponent implements OnInit {
     solicitudesExistentes.unshift(solicitud);
     localStorage.setItem('solicitudes', JSON.stringify(solicitudesExistentes));
     
-    this.mensaje = 'Solicitud creada exitosamente. Puede gestionarla desde el módulo de Proveedores';
+    this.mensaje = `Solicitud creada exitosamente para el proveedor "${proveedor?.nombre}". Puede gestionarla desde el módulo de Proveedores`;
     this.cerrarFormularios();
   }
 
@@ -272,6 +274,77 @@ export class BodegaComponent implements OnInit {
     if (producto.stock === 0) return 'stock-critico';
     if (producto.stock < producto.stockMinimo) return 'stock-bajo';
     return 'stock-normal';
+  }
+
+  /**
+   * Verifica si un producto tiene una solicitud pendiente o aprobada con un proveedor específico
+   */
+  tieneSolicitudEnCurso(productoId: string, proveedorId?: string): boolean {
+    const solicitudesGuardadas = localStorage.getItem('solicitudes');
+    if (!solicitudesGuardadas) return false;
+    
+    const solicitudes: SolicitudProveedor[] = JSON.parse(solicitudesGuardadas);
+    
+    if (proveedorId) {
+      // Verificar solicitud específica de producto + proveedor
+      return solicitudes.some(s => 
+        s.productoId === productoId && 
+        s.proveedorId === proveedorId &&
+        (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+      );
+    }
+    
+    // Verificar si tiene alguna solicitud en curso (sin filtrar por proveedor)
+    return solicitudes.some(s => 
+      s.productoId === productoId && 
+      (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+    );
+  }
+
+  /**
+   * Obtiene todas las solicitudes en curso de un producto
+   */
+  getSolicitudesEnCurso(productoId: string): SolicitudProveedor[] {
+    const solicitudesGuardadas = localStorage.getItem('solicitudes');
+    if (!solicitudesGuardadas) return [];
+    
+    const solicitudes: SolicitudProveedor[] = JSON.parse(solicitudesGuardadas);
+    return solicitudes.filter(s => 
+      s.productoId === productoId && 
+      (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+    );
+  }
+
+  /**
+   * Obtiene la solicitud en curso de un producto con un proveedor específico
+   */
+  getSolicitudEnCurso(productoId: string, proveedorId?: string): SolicitudProveedor | null {
+    const solicitudesGuardadas = localStorage.getItem('solicitudes');
+    if (!solicitudesGuardadas) return null;
+    
+    const solicitudes: SolicitudProveedor[] = JSON.parse(solicitudesGuardadas);
+    
+    if (proveedorId) {
+      return solicitudes.find(s => 
+        s.productoId === productoId && 
+        s.proveedorId === proveedorId &&
+        (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+      ) || null;
+    }
+    
+    // Si no se especifica proveedor, devolver la primera solicitud en curso
+    return solicitudes.find(s => 
+      s.productoId === productoId && 
+      (s.estado === 'Pendiente' || s.estado === 'Aprobada')
+    ) || null;
+  }
+
+  /**
+   * Obtiene los IDs de proveedores que tienen solicitudes en curso para un producto
+   */
+  getProveedoresConSolicitud(productoId: string): string[] {
+    const solicitudes = this.getSolicitudesEnCurso(productoId);
+    return solicitudes.map(s => s.proveedorId);
   }
 
   cerrarFormularios(): void {

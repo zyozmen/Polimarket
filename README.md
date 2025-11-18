@@ -23,12 +23,17 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
   - Botón "Ver Historial" en cada tarjeta de cliente
   - Alerta informativa mostrando el cliente filtrado
   - Opción para volver a ver todas las ventas
-- **Registro de ventas**:
-  - Selección de cliente y vendedor
+- **✅ Procesamiento de ventas con API REST**:
+  - Crear ventas en tiempo real en el backend
+  - Selección ágil de cliente y productos
+  - Actualización visual instantánea del stock
   - Múltiples items por venta
-  - Descuentos por item
-  - Cálculo automático de totales
-  - Comentarios adicionales
+  - Cálculo automático de totales con IVA y descuentos
+  - Indicador de progreso durante el procesamiento
+  - Recarga automática del historial después de crear
+  - **Atajos de teclado**: Ctrl+Enter o F2 para procesar, Esc para cancelar
+  - Manejo inteligente de errores con mensajes claros
+  - Total visible en el botón de procesar para decisión rápida
 
 ### 👥 Módulo de Recursos Humanos
 - **✅ Integración completa con API RRHH** (`https://akira.sedbaq.com.co/rrhh`):
@@ -168,7 +173,7 @@ Polimarket/
 |----------|--------|---------------|
 | **RRHH API** | ✅ Completo | Crear, consultar y autorizar vendedores |
 | **Customers** | ✅ Completo | CRUD completo de clientes |
-| **Sales** | ⚠️ Parcial | Listado + filtrado por cliente (crear pendiente) |
+| **Sales** | ✅ Completo | Listar, filtrar y crear ventas con atajos de teclado |
 | **Products** | ✅ Integrado | Carga en módulo Ventas con actualización manual |
 | **Deliveries** | ⚠️ Pendiente | Servicio listo, UI pendiente |
 
