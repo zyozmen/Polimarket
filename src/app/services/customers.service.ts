@@ -55,6 +55,14 @@ export class CustomersService {
   }
 
   /**
+   * Elimina un cliente
+   * DELETE /customers/:id
+   */
+  deleteCustomer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
+  }
+
+  /**
    * Busca clientes por nombre o identificación
    * Filtrado del lado del cliente
    */

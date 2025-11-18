@@ -958,3 +958,74 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Sección de Ventas */
+.ventas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.venta-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.venta-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.venta-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.venta-header h5 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.venta-header .badge {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.venta-body {
+  padding: 1.5rem;
+}
+
+.items-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.items-section h6 {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.totales-section {
+  background: #fff;
+  padding-top: 1rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.mensaje-vacio {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6c757d;
+}
+

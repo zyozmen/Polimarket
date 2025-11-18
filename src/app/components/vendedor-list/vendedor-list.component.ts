@@ -307,17 +307,21 @@ export class VendedorListComponent implements OnInit {
     this.rrhhApiService.autorizarVendedor(id).subscribe({
       next: (response) => {
         console.log('✅ Vendedor autorizado:', response);
-        if (response.autorizado) {
-          this.mensaje = `Vendedor #${id} autorizado exitosamente`;
-          this.vendedorIdAutorizar = '';
-          
-          // Actualizar el estado del vendedor consultado si existe
-          if (this.vendedorConsultado && this.vendedorConsultado.id === id) {
-            this.vendedorConsultado.estado_autorizacion = true;
-          }
-        } else {
-          this.error = `No se pudo autorizar al vendedor #${id}`;
+        
+        // Si el servicio responde 200, el vendedor fue autorizado
+        this.mensaje = `✅ Vendedor #${id} autorizado exitosamente`;
+        this.vendedorIdAutorizar = '';
+        
+        // Actualizar el estado del vendedor consultado
+        if (this.vendedorConsultado && this.vendedorConsultado.id === id) {
+          // Actualizar el objeto y crear nueva referencia para forzar detección de cambios
+          this.vendedorConsultado = {
+            ...this.vendedorConsultado,
+            estado_autorizacion: true
+          };
+          console.log('✅ GUI actualizada - estado_autorizacion:', this.vendedorConsultado.estado_autorizacion);
         }
+        
         this.loading = false;
         setTimeout(() => this.limpiarMensajes(), 5000);
       },

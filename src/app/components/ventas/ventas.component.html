@@ -5,9 +5,14 @@
   </div>
 
   <!-- Mensajes -->
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-    <button type="button" class="btn-close" (click)="error = ''"></button>
+  <div *ngIf="error" class="alert alert-danger d-flex justify-content-between align-items-center">
+    <span>{{ error }}</span>
+    <div>
+      <button type="button" class="btn btn-sm btn-warning me-2" (click)="cargarClientesDesdeBackend()" *ngIf="error.includes('servidor')">
+        <i class="bi bi-arrow-clockwise"></i> Reintentar
+      </button>
+      <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
   </div>
 
   <div *ngIf="mensaje" class="alert alert-success">
@@ -23,6 +28,13 @@
       (click)="cambiarSeccion('clientes')">
       <span class="icon">👥</span>
       Clientes
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="seccionActiva === 'ventas'"
+      (click)="cambiarSeccion('ventas')">
+      <span class="icon">📊</span>
+      Historial de Ventas
     </button>
     <button 
       class="tab-btn" 
@@ -46,11 +58,11 @@
     <div class="section-header">
       <h3>Listado de Clientes</h3>
       <div class="d-flex gap-2">
-        <button class="btn btn-info" (click)="cargarVentasDesdeBackend()" [disabled]="cargandoVentas">
+        <button class="btn btn-success" (click)="cargarClientesDesdeBackend()" [disabled]="cargandoClientes">
           <span class="icon">🔄</span>
-          {{ cargandoVentas ? 'Cargando...' : 'Ver Ventas del Servidor' }}
+          {{ cargandoClientes ? 'Cargando...' : 'Actualizar Clientes' }}
         </button>
-        <button class="btn btn-primary" (click)="abrirFormCliente()">
+        <button class="btn btn-primary" (click)="abrirFormCliente()" [disabled]="cargandoClientes">
           <span class="icon">➕</span>
           Nuevo Cliente
         </button>
@@ -163,8 +175,12 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-success">Guardar Cliente</button>
-          <button type="button" class="btn btn-secondary" (click)="cerrarFormularios()">Cancelar</button>
+          <button type="submit" class="btn btn-success" [disabled]="cargandoClientes">
+            {{ cargandoClientes ? 'Guardando...' : 'Guardar Cliente' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cerrarFormularios()" [disabled]="cargandoClientes">
+            Cancelar
+          </button>
         </div>
       </form>
     </div>
@@ -203,6 +219,9 @@
           <button class="btn btn-sm btn-success" (click)="iniciarVenta(cliente)">
             🛒 Realizar Venta
           </button>
+          <button class="btn btn-sm btn-info" (click)="verHistorialCliente(cliente)">
+            📊 Ver Historial
+          </button>
           <button class="btn btn-sm btn-warning" (click)="abrirFormCliente(cliente)">
             Editar
           </button>
@@ -218,14 +237,164 @@
     </div>
   </div>
 
+  <!-- Sección: Historial de Ventas -->
+  <div *ngIf="seccionActiva === 'ventas'" class="section">
+    <div class="section-header">
+      <h3>📊 Historial de Ventas</h3>
+      <button class="btn btn-success" (click)="cargarVentasDesdeBackend()" [disabled]="cargandoVentas">
+        <span class="icon">🔄</span>
+        {{ cargandoVentas ? 'Cargando...' : 'Actualizar Ventas' }}
+      </button>
+    </div>
+
+    <!-- Filtro de cliente activo -->
+    <div *ngIf="clienteVentasFiltro" class="alert alert-info d-flex justify-content-between align-items-center">
+      <div>
+        <strong>👤 Mostrando ventas de:</strong> {{ clienteVentasFiltro.nombre }} ({{ clienteVentasFiltro.documento }})
+      </div>
+      <button class="btn btn-sm btn-outline-primary" (click)="volverAlHistorialCompleto()">
+        ← Ver todas las ventas
+      </button>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="cargandoVentas" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando ventas...</span>
+      </div>
+      <p class="mt-3">Cargando ventas desde el servidor...</p>
+    </div>
+
+    <!-- Lista de ventas -->
+    <div *ngIf="!cargandoVentas && ventasFiltradas.length > 0" class="ventas-list">
+      <div *ngFor="let venta of ventasFiltradas" class="venta-card">
+        <div class="venta-header">
+          <div>
+            <h5>Venta #{{ venta.id }}</h5>
+            <p class="text-muted mb-0">{{ venta.fecha | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <div class="text-end">
+            <span class="badge" [ngClass]="{
+              'bg-success': venta.estado === 'Completada',
+              'bg-warning': venta.estado === 'Pendiente',
+              'bg-danger': venta.estado === 'Cancelada'
+            }">{{ venta.estado }}</span>
+            <h4 class="mt-2 mb-0">{{ formatearPrecio(venta.total) }}</h4>
+          </div>
+        </div>
+        
+        <div class="venta-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="detalle-item">
+                <span class="icon">👤</span>
+                <strong>Cliente:</strong> {{ venta.clienteNombre }}
+              </div>
+              <div class="detalle-item" *ngIf="venta.vendedor">
+                <span class="icon">🏷️</span>
+                <strong>Vendedor:</strong> {{ venta.vendedor }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="detalle-item">
+                <span class="icon">💳</span>
+                <strong>Método de pago:</strong> {{ venta.metodoPago }}
+              </div>
+              <div class="detalle-item" *ngIf="venta.notasVenta">
+                <span class="icon">📝</span>
+                <strong>Notas:</strong> {{ venta.notasVenta }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Items de la venta -->
+          <div class="items-section">
+            <h6 class="mb-2">📦 Productos ({{ venta.items.length }})</h6>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-end">Precio Unit.</th>
+                    <th class="text-end">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of venta.items">
+                    <td>{{ item.producto.nombre }}</td>
+                    <td class="text-center">{{ item.cantidad }}</td>
+                    <td class="text-end">{{ formatearPrecio(item.producto.precio) }}</td>
+                    <td class="text-end">{{ formatearPrecio(item.subtotal) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Totales -->
+          <div class="totales-section">
+            <div class="row">
+              <div class="col-md-6 offset-md-6">
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Subtotal:</span>
+                  <strong>{{ formatearPrecio(venta.subtotal) }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2" *ngIf="venta.descuento > 0">
+                  <span>Descuento:</span>
+                  <strong class="text-danger">-{{ formatearPrecio(venta.descuento) }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Impuestos:</span>
+                  <strong>{{ formatearPrecio(venta.impuesto) }}</strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                  <h5>Total:</h5>
+                  <h5 class="text-success">{{ formatearPrecio(venta.total) }}</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay ventas -->
+    <div *ngIf="!cargandoVentas && ventasFiltradas.length === 0" class="mensaje-vacio">
+      <div class="text-center py-5">
+        <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
+        <h4 class="mt-3" *ngIf="clienteVentasFiltro; else sinVentasGeneral">
+          No hay ventas registradas para {{ clienteVentasFiltro.nombre }}
+        </h4>
+        <ng-template #sinVentasGeneral>
+          <h4 class="mt-3">No hay ventas registradas</h4>
+        </ng-template>
+        <p class="text-muted">Las ventas aparecerán aquí una vez que se procesen</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Sección: Productos Disponibles -->
   <div *ngIf="seccionActiva === 'productos'" class="section">
     <div class="section-header">
       <h3>Productos Disponibles para Venta</h3>
+      <button class="btn btn-success" (click)="cargarProductosDesdeBackend()" [disabled]="cargandoProductos">
+        <span class="icon">🔄</span>
+        {{ cargandoProductos ? 'Cargando...' : 'Actualizar Productos' }}
+      </button>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="cargandoProductos" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando productos...</span>
+      </div>
+      <p class="mt-3">Cargando productos desde el servidor...</p>
     </div>
 
     <!-- Filtros de productos -->
-    <div class="filtros">
+    <div *ngIf="!cargandoProductos" class="filtros">
       <div class="filtro-busqueda">
         <input 
           type="text" 
@@ -246,7 +415,7 @@
     </div>
 
     <!-- Grid de productos -->
-    <div class="productos-grid">
+    <div *ngIf="!cargandoProductos" class="productos-grid">
       <div *ngFor="let producto of productosFiltrados" class="producto-card">
         <div class="producto-header">
           <span class="producto-codigo">{{ producto.codigo }}</span>

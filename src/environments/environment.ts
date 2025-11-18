@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://ventas-al0w.onrender.com',
+  apiUrl: '/ventas-api',
   apiTimeout: 30000,
   enableDebug: true
 };

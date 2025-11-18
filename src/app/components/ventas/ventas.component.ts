@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SalesService } from '../../services/sales.service';
+import { CustomersService, Customer } from '../../services/customers.service';
+import { ProductsService, Product } from '../../services/products.service';
 
 interface Cliente {
   id: string;
@@ -45,6 +47,7 @@ interface Venta {
   metodoPago: 'Efectivo' | 'Tarjeta' | 'Transferencia';
   estado: 'Completada' | 'Pendiente' | 'Cancelada';
   vendedor: string;
+  notasVenta?: string;
 }
 
 @Component({
@@ -53,7 +56,7 @@ interface Venta {
   styleUrls: ['./ventas.component.css']
 })
 export class VentasComponent implements OnInit {
-  seccionActiva: 'clientes' | 'productos' | 'realizar-venta' = 'clientes';
+  seccionActiva: 'clientes' | 'ventas' | 'productos' | 'realizar-venta' = 'clientes';
   
   // Datos
   clientes: Cliente[] = [];
@@ -65,6 +68,7 @@ export class VentasComponent implements OnInit {
   // Carrito de compras
   carrito: ItemCarrito[] = [];
   clienteVenta: Cliente | null = null;
+  clienteVentasFiltro: Cliente | null = null; // Cliente para filtrar historial de ventas
   metodoPago: 'Efectivo' | 'Tarjeta' | 'Transferencia' = 'Efectivo';
   descuentoPorcentaje = 0;
   notasVenta = '';
@@ -95,77 +99,85 @@ export class VentasComponent implements OnInit {
   mensaje = '';
   error = '';
   cargandoVentas = false;
+  cargandoClientes = false;
+  cargandoProductos = false;
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private salesService: SalesService,
+    private customersService: CustomersService,
+    private productsService: ProductsService
+  ) {}
 
   ngOnInit(): void {
+    this.cargarClientesDesdeBackend();
+    this.cargarProductosDesdeBackend();
     this.cargarDatos();
     this.cargarVentasDesdeBackend();
   }
 
-  cargarDatos(): void {
-    // Cargar clientes
+  /**
+   * Carga los clientes desde el backend REST
+   */
+  cargarClientesDesdeBackend(): void {
+    this.cargandoClientes = true;
+    this.error = '';
+    
+    this.customersService.getCustomers().subscribe({
+      next: (customersBackend) => {
+        console.log('✅ Clientes cargados desde el backend:', customersBackend);
+        
+        // Mapear Customer (backend) a Cliente (interfaz local)
+        this.clientes = customersBackend.map(customer => ({
+          id: customer.id?.toString() || '',
+          nombre: customer.name || '',
+          documento: customer.identification || '',
+          email: customer.email || '',
+          telefono: customer.phone || '',
+          direccion: customer.address || '',
+          ciudad: '', // No existe en backend, campo local
+          tipoCliente: 'Regular' as 'Regular' | 'VIP' | 'Nuevo' // Por defecto
+        }));
+        
+        this.cargandoClientes = false;
+        this.aplicarFiltros();
+        console.log(`${this.clientes.length} clientes cargados desde el servidor`);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar clientes:', error);
+        
+        if (error.status === 404) {
+          this.error = 'El servidor está despertando... Por favor espera 1-2 minutos e intenta de nuevo.';
+        } else if (error.status === 0) {
+          this.error = 'No se pudo conectar al servidor. Verifica tu conexión.';
+        } else {
+          this.error = `Error al cargar clientes: ${error.message || 'Error desconocido'}`;
+        }
+        
+        this.cargandoClientes = false;
+        
+        // Cargar desde localStorage como respaldo
+        this.cargarClientesDesdeLocalStorage();
+      }
+    });
+  }
+
+  /**
+   * Respaldo: carga clientes desde localStorage
+   */
+  private cargarClientesDesdeLocalStorage(): void {
     const clientesGuardados = localStorage.getItem('clientes');
     if (clientesGuardados) {
       this.clientes = JSON.parse(clientesGuardados);
-    } else {
-      // Datos de ejemplo
-      this.clientes = [
-        {
-          id: '1',
-          nombre: 'Juan Pérez',
-          documento: '1234567890',
-          email: 'juan.perez@email.com',
-          telefono: '3001234567',
-          direccion: 'Calle 123 #45-67',
-          ciudad: 'Bogotá',
-          tipoCliente: 'VIP'
-        },
-        {
-          id: '2',
-          nombre: 'María García',
-          documento: '9876543210',
-          email: 'maria.garcia@email.com',
-          telefono: '3009876543',
-          direccion: 'Carrera 45 #12-34',
-          ciudad: 'Medellín',
-          tipoCliente: 'Regular'
-        },
-        {
-          id: '3',
-          nombre: 'Carlos López',
-          documento: '5555555555',
-          email: 'carlos.lopez@email.com',
-          telefono: '3105555555',
-          direccion: 'Avenida 68 #23-45',
-          ciudad: 'Cali',
-          tipoCliente: 'Regular'
-        },
-        {
-          id: '4',
-          nombre: 'Ana Martínez',
-          documento: '1111111111',
-          email: 'ana.martinez@email.com',
-          telefono: '3201111111',
-          direccion: 'Calle 80 #10-20',
-          ciudad: 'Bogotá',
-          tipoCliente: 'Nuevo'
-        }
-      ];
-      this.guardarClientes();
+      this.aplicarFiltros();
     }
+  }
+
+  cargarDatos(): void {
+    // Los clientes se cargan desde cargarClientesDesdeBackend()
+    // Los productos se cargan desde cargarProductosDesdeBackend()
+    // Las ventas se cargan desde cargarVentasDesdeBackend()
     
-    // Cargar productos desde bodega
-    const productosGuardados = localStorage.getItem('productos');
-    if (productosGuardados) {
-      this.productos = JSON.parse(productosGuardados);
-      // Inicializar cantidadAgregar para cada producto
-      this.productos.forEach(p => p.cantidadAgregar = 1);
-    }
-    
-    // Las ventas se cargan desde el backend en cargarVentasDesdeBackend()
-    
-    this.actualizarCategorias();
+    // Solo aplicar filtros iniciales
     this.aplicarFiltros();
   }
 
@@ -217,17 +229,91 @@ export class VentasComponent implements OnInit {
       },
       error: (error) => {
         console.error('❌ Error al cargar ventas:', error);
-        this.error = `Error al cargar ventas del servidor: ${error.message}`;
+        
+        if (error.status === 404) {
+          console.warn('⚠️ El servidor está despertando o el endpoint /sales no está disponible');
+        } else if (error.status === 0) {
+          console.warn('⚠️ No se pudo conectar al servidor para cargar ventas');
+        } else {
+          console.warn(`⚠️ Error al cargar ventas: ${error.message || 'Error desconocido'}`);
+        }
+        
         this.cargandoVentas = false;
         
-        // Cargar ventas desde localStorage como respaldo
+        // Cargar ventas desde localStorage como respaldo (sin mostrar error)
         const ventasGuardadas = localStorage.getItem('ventas');
         if (ventasGuardadas) {
           this.ventas = JSON.parse(ventasGuardadas);
-          this.mensaje = 'Ventas cargadas desde el almacenamiento local';
+          console.log('✅ Ventas cargadas desde localStorage como respaldo');
         }
       }
     });
+  }
+
+  /**
+   * Carga los productos desde el backend REST
+   */
+  cargarProductosDesdeBackend(): void {
+    this.cargandoProductos = true;
+    this.error = '';
+
+    this.productsService.getProducts().subscribe({
+      next: (productsBackend) => {
+        console.log('✅ Productos cargados desde el backend:', productsBackend);
+        
+        // Mapear Product (backend) a Producto (interfaz local)
+        this.productos = productsBackend.map(product => ({
+          id: product.id?.toString() || '',
+          codigo: `PROD-${product.id}`,
+          nombre: product.name || '',
+          descripcion: product.description || '',
+          precio: product.price || 0,
+          stock: product.stock || 0,
+          stockMinimo: 10,
+          categoria: product.category || 'General',
+          proveedor: 'Sin especificar',
+          cantidadAgregar: 1
+        }));
+        
+        // Extraer categorías únicas
+        this.categorias = ['todas', ...new Set(this.productos.map(p => p.categoria))];
+        
+        this.cargandoProductos = false;
+        this.aplicarFiltros();
+        console.log(`${this.productos.length} productos cargados desde el servidor`);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar productos:', error);
+        
+        if (error.status === 404) {
+          this.error = 'El servidor está despertando... Por favor espera 1-2 minutos e intenta de nuevo.';
+        } else if (error.status === 0) {
+          this.error = 'No se pudo conectar al servidor. Verifica tu conexión.';
+        } else {
+          this.error = `Error al cargar productos: ${error.message || 'Error desconocido'}`;
+        }
+        
+        this.cargandoProductos = false;
+        
+        // Cargar desde localStorage como respaldo
+        this.cargarProductosDesdeLocalStorage();
+      }
+    });
+  }
+
+  /**
+   * Carga productos desde localStorage como respaldo
+   */
+  cargarProductosDesdeLocalStorage(): void {
+    const productosGuardados = localStorage.getItem('productos');
+    if (productosGuardados) {
+      this.productos = JSON.parse(productosGuardados);
+      this.categorias = ['todas', ...new Set(this.productos.map(p => p.categoria))];
+      this.aplicarFiltros();
+      console.log('⚠️ Productos cargados desde localStorage como respaldo');
+    } else {
+      console.log('⚠️ No hay productos en localStorage');
+    }
   }
 
   /**
@@ -248,16 +334,12 @@ export class VentasComponent implements OnInit {
     }
   }
 
-  guardarClientes(): void {
-    localStorage.setItem('clientes', JSON.stringify(this.clientes));
-  }
-
   actualizarCategorias(): void {
     const cats = new Set(this.productos.map(p => p.categoria));
     this.categorias = Array.from(cats);
   }
 
-  cambiarSeccion(seccion: 'clientes' | 'productos' | 'realizar-venta'): void {
+  cambiarSeccion(seccion: 'clientes' | 'ventas' | 'productos' | 'realizar-venta'): void {
     this.seccionActiva = seccion;
     this.limpiarMensajes();
     this.cerrarFormularios();
@@ -316,36 +398,80 @@ export class VentasComponent implements OnInit {
       this.error = 'Nombre y documento son obligatorios';
       return;
     }
+
+    this.cargandoClientes = true;
+    this.limpiarMensajes();
     
     if (this.clienteSeleccionado) {
-      // Actualizar cliente existente
-      const index = this.clientes.findIndex(c => c.id === this.clienteSeleccionado!.id);
-      if (index > -1) {
-        this.clientes[index] = { ...this.nuevoCliente };
-        this.mensaje = 'Cliente actualizado exitosamente';
-      }
-    } else {
-      // Crear nuevo cliente
-      const cliente: Cliente = {
-        ...this.nuevoCliente,
-        id: Date.now().toString()
+      // Actualizar cliente existente en el backend
+      const customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'> = {
+        identification: this.nuevoCliente.documento,
+        name: this.nuevoCliente.nombre,
+        email: this.nuevoCliente.email,
+        address: this.nuevoCliente.direccion,
+        phone: this.nuevoCliente.telefono
       };
-      this.clientes.push(cliente);
-      this.mensaje = 'Cliente creado exitosamente';
+
+      this.customersService.updateCustomer(parseInt(this.clienteSeleccionado.id), customerData).subscribe({
+        next: (customerActualizado) => {
+          console.log('✅ Cliente actualizado:', customerActualizado);
+          this.mensaje = 'Cliente actualizado exitosamente';
+          this.cargandoClientes = false;
+          this.cargarClientesDesdeBackend(); // Recargar lista
+          this.cerrarFormularios();
+        },
+        error: (error) => {
+          console.error('❌ Error al actualizar cliente:', error);
+          this.error = `Error al actualizar cliente: ${error.message}`;
+          this.cargandoClientes = false;
+        }
+      });
+    } else {
+      // Crear nuevo cliente en el backend
+      const customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'> = {
+        identification: this.nuevoCliente.documento,
+        name: this.nuevoCliente.nombre,
+        email: this.nuevoCliente.email,
+        address: this.nuevoCliente.direccion,
+        phone: this.nuevoCliente.telefono
+      };
+
+      this.customersService.createCustomer(customerData).subscribe({
+        next: (customerCreado) => {
+          console.log('✅ Cliente creado:', customerCreado);
+          this.mensaje = 'Cliente creado exitosamente';
+          this.cargandoClientes = false;
+          this.cargarClientesDesdeBackend(); // Recargar lista
+          this.cerrarFormularios();
+        },
+        error: (error) => {
+          console.error('❌ Error al crear cliente:', error);
+          this.error = `Error al crear cliente: ${error.message}`;
+          this.cargandoClientes = false;
+        }
+      });
     }
-    
-    this.guardarClientes();
-    this.aplicarFiltros();
-    this.cerrarFormularios();
   }
 
   eliminarCliente(id: string): void {
     const cliente = this.clientes.find(c => c.id === id);
     if (cliente && confirm(`¿Está seguro de eliminar al cliente "${cliente.nombre}"?`)) {
-      this.clientes = this.clientes.filter(c => c.id !== id);
-      this.guardarClientes();
-      this.aplicarFiltros();
-      this.mensaje = 'Cliente eliminado exitosamente';
+      this.cargandoClientes = true;
+      this.limpiarMensajes();
+
+      this.customersService.deleteCustomer(parseInt(id)).subscribe({
+        next: () => {
+          console.log('✅ Cliente eliminado');
+          this.mensaje = 'Cliente eliminado exitosamente';
+          this.cargandoClientes = false;
+          this.cargarClientesDesdeBackend(); // Recargar lista
+        },
+        error: (error: any) => {
+          console.error('❌ Error al eliminar cliente:', error);
+          this.error = `Error al eliminar cliente: ${error.message}`;
+          this.cargandoClientes = false;
+        }
+      });
     }
   }
 
@@ -587,12 +713,12 @@ export class VentasComponent implements OnInit {
     this.ventas.push(venta);
     localStorage.setItem('ventas', JSON.stringify(this.ventas));
 
-    // Actualizar tipo de cliente si es necesario
+    // Actualizar tipo de cliente si es necesario (solo localmente, no afecta el backend)
     if (this.clienteVenta.tipoCliente === 'Nuevo') {
       const cliente = this.clientes.find(c => c.id === this.clienteVenta!.id);
       if (cliente) {
         cliente.tipoCliente = 'Regular';
-        this.guardarClientes();
+        // Ya no guardamos en localStorage, el backend maneja la persistencia
       }
     }
 
@@ -643,5 +769,30 @@ export class VentasComponent implements OnInit {
   getTotalVentasCliente(clienteId: string): number {
     return this.obtenerVentasCliente(clienteId)
       .reduce((total, venta) => total + venta.total, 0);
+  }
+
+  /**
+   * Retorna las ventas filtradas según el cliente seleccionado
+   */
+  get ventasFiltradas(): Venta[] {
+    if (this.clienteVentasFiltro) {
+      return this.ventas.filter(v => v.clienteId === this.clienteVentasFiltro!.id);
+    }
+    return this.ventas;
+  }
+
+  /**
+   * Ver historial de ventas de un cliente específico
+   */
+  verHistorialCliente(cliente: Cliente): void {
+    this.clienteVentasFiltro = cliente;
+    this.cambiarSeccion('ventas');
+  }
+
+  /**
+   * Volver a mostrar todas las ventas
+   */
+  volverAlHistorialCompleto(): void {
+    this.clienteVentasFiltro = null;
   }
 }

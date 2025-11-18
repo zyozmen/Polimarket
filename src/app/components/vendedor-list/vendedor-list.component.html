@@ -134,10 +134,12 @@
               <label class="fw-bold text-muted">Estado de Autorización:</label>
               <p class="mb-0">
                 <span 
-                  class="badge"
+                  class="badge badge-lg"
                   [class.bg-success]="vendedorConsultado.estado_autorizacion"
-                  [class.bg-warning]="!vendedorConsultado.estado_autorizacion">
-                  {{ vendedorConsultado.estado_autorizacion ? '✓ Autorizado' : '⏳ Pendiente' }}
+                  [class.bg-warning]="!vendedorConsultado.estado_autorizacion"
+                  [class.animate-badge]="vendedorConsultado.estado_autorizacion">
+                  <i class="bi" [class.bi-check-circle-fill]="vendedorConsultado.estado_autorizacion" [class.bi-clock-fill]="!vendedorConsultado.estado_autorizacion"></i>
+                  {{ vendedorConsultado.estado_autorizacion ? 'Autorizado' : 'Pendiente de Autorización' }}
                 </span>
               </p>
             </div>
@@ -150,6 +152,14 @@
           </div>
         </div>
 
+        <!-- Mensaje de autorización exitosa -->
+        <div *ngIf="vendedorConsultado.estado_autorizacion" class="alert alert-success d-flex align-items-center mb-3" role="alert">
+          <i class="bi bi-check-circle-fill me-2" style="font-size: 1.5rem;"></i>
+          <div>
+            <strong>¡Vendedor Autorizado!</strong> Este vendedor tiene acceso completo al sistema.
+          </div>
+        </div>
+
         <!-- Botón de autorización -->
         <div class="authorization-section">
           <button 
@@ -158,7 +168,7 @@
             [class.btn-secondary]="vendedorConsultado.estado_autorizacion"
             (click)="autorizarVendedorApi()"
             [disabled]="vendedorConsultado.estado_autorizacion || loading">
-            <span class="icon">{{ vendedorConsultado.estado_autorizacion ? '✓' : '✓' }}</span>
+            <i class="bi" [class.bi-check-circle]="!vendedorConsultado.estado_autorizacion" [class.bi-check-circle-fill]="vendedorConsultado.estado_autorizacion"></i>
             {{ vendedorConsultado.estado_autorizacion ? 'Ya está autorizado' : (loading ? 'Autorizando...' : 'Autorizar Vendedor') }}
           </button>
         </div>

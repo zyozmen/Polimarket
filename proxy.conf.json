@@ -7,5 +7,14 @@
     "pathRewrite": {
       "^/rrhh-api": "/rrhh"
     }
+  },
+  "/ventas-api": {
+    "target": "https://ventas-al0w.onrender.com",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/ventas-api": ""
+    }
   }
 }

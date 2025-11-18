@@ -1,24 +1,50 @@
 # PoliMarket - Sistema de Gestión de Ventas y Entregas
 
-Aplicación Angular para la gestión completa de ventas, clientes, inventario y entregas. Conectada a una API REST construida con Ruby on Rails.
+Aplicación Angular para la gestión completa de ventas, clientes, inventario y entregas. Conectada a APIs REST externas para funcionalidad completa.
 
 ## 🚀 Características Principales
 
 ### 💰 Módulo de Ventas
-- **Gestión de clientes**: CRUD completo de clientes con validación
-- **Catálogo de productos**: Visualización de productos disponibles
+- **✅ Gestión de clientes con API REST**: 
+  - CRUD completo integrado con backend Rails
+  - Crear, editar, eliminar clientes en tiempo real
+  - Sincronización automática con servidor
+  - Respaldo con localStorage en caso de error
+- **✅ Catálogo de productos con API REST**: 
+  - Carga de productos desde backend Rails
+  - Visualización de productos disponibles con stock
+  - Botón de actualización manual desde servidor
+  - Respaldo con localStorage en caso de error
+- **✅ Historial de ventas desde servidor**: 
+  - Consulta de ventas desde backend Rails
+  - Visualización de items y estados de entrega
+  - Mapeo automático de estados (Pendiente, En Progreso, Confirmado, Cancelado)
+  - **Filtrado por cliente**: Ver historial de ventas de un cliente específico
+  - Botón "Ver Historial" en cada tarjeta de cliente
+  - Alerta informativa mostrando el cliente filtrado
+  - Opción para volver a ver todas las ventas
 - **Registro de ventas**:
   - Selección de cliente y vendedor
   - Múltiples items por venta
   - Descuentos por item
   - Cálculo automático de totales
   - Comentarios adicionales
-- **Historial de ventas**: Consulta de todas las ventas realizadas
 
-### 📦 Módulo de Bodega (Productos)
+### 👥 Módulo de Recursos Humanos
+- **✅ Integración completa con API RRHH** (`https://akira.sedbaq.com.co/rrhh`):
+  - Crear vendedores en servidor externo
+  - Consultar vendedores por ID con tarjeta de resultados
+  - Autorizar vendedores con botón condicional según estado
+  - Manejo de errores personalizado (500 → "Vendedor no encontrado")
+  - Validación de duplicados en solicitudes
+- **Gestión local de usuarios**: Login y permisos con localStorage
+
+### 📦 Módulo de Bodega (Inventario)
 - **Consulta de inventario**: Visualización completa de productos
 - **Información detallada**: Nombre, descripción, precio, stock y categoría
 - **Búsqueda y filtrado**: Localiza productos rápidamente
+- **Gestión de solicitudes**: Crear solicitudes a proveedores
+- **Validación de duplicados**: Previene solicitudes duplicadas
 
 ### 🚚 Módulo de Entregas
 - **Gestión de entregas**: Visualiza todas las entregas asociadas a ventas
@@ -32,14 +58,11 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
   - Confirmar entrega
   - Cancelar entrega
 
-### 👥 Módulo de Clientes
-- **CRUD completo**: Crear, leer, actualizar clientes
-- **Información**: Identificación, nombre, email, dirección, teléfono
-- **Validación**: Campos requeridos y formatos correctos
-  - Actualización automática de inventario al marcar como entregada
-  - Historial completo con filtros por estado y proveedor
-- **Alertas inteligentes**: Productos que necesitan reabastecimiento
-- **Información completa**: Nombre, contacto, teléfono, email, dirección, ciudad, categorías
+### 🏪 Módulo de Proveedores
+- **Gestión de proveedores**: CRUD completo local
+- **Solicitudes de stock**: Ver y gestionar solicitudes desde Bodega
+- **Estados**: Pendiente, Aprobada, Rechazada, Entregada
+- **Actualización automática de inventario** al marcar como entregada
 
 ## 🔄 Flujo de Solicitudes de Stock
 
@@ -52,8 +75,9 @@ Aplicación Angular para la gestión completa de ventas, clientes, inventario y 
 
 - Node.js (v18 o superior)
 - npm (v9 o superior)
-- Angular CLI (v17)
-- **Backend Rails**: API REST corriendo en `http://localhost:3000`
+- Angular CLI (v17+)
+- **Backend Rails**: API REST en `https://ventas-al0w.onrender.com`
+- **API RRHH**: API externa en `https://akira.sedbaq.com.co/rrhh`
 
 ## 🛠️ Instalación
 
@@ -76,12 +100,10 @@ npm install -g @angular/cli
 ```bash
 npm start
 ```
-O también:
-```bash
-ng serve
-```
 
 La aplicación estará disponible en `http://localhost:4200/`
+
+**Nota**: El comando `npm start` inicia el servidor con configuración de proxy para evitar errores CORS con la API RRHH externa.
 
 ### Modo producción
 ```bash
@@ -106,12 +128,18 @@ Polimarket/
 │   │   ├── models/
 │   │   │   └── vendedor.model.ts   # Interfaces y tipos
 │   │   ├── services/
-│   │   │   ├── customers.service.ts    # Servicio de clientes
-│   │   │   ├── products.service.ts     # Servicio de productos
-│   │   │   ├── sales.service.ts        # Servicio de ventas
-│   │   │   └── deliveries.service.ts   # Servicio de entregas
+│   │   │   ├── auth.service.ts         # Servicio de autenticación
+│   │   │   ├── recursos-humanos.service.ts  # Gestión local de usuarios
+│   │   │   ├── rrhh-api.service.ts     # ✅ API RRHH externa
+│   │   │   ├── customers.service.ts    # ✅ Servicio de clientes (Rails API)
+│   │   │   ├── products.service.ts     # Servicio de productos (Rails API)
+│   │   │   ├── sales.service.ts        # ✅ Servicio de ventas (Rails API)
+│   │   │   ├── deliveries.service.ts   # Servicio de entregas (Rails API)
+│   │   │   ├── bodega.service.ts       # Gestión local de inventario
+│   │   │   ├── proveedores.service.ts  # Gestión local de proveedores
+│   │   │   └── entregas.service.ts     # Gestión local de entregas
 │   │   ├── interceptors/
-│   │   │   └── auth.interceptor.ts # Interceptor HTTP para manejo de errores
+│   │   │   └── auth.interceptor.ts # Interceptor HTTP con manejo de errores
 │   │   ├── guards/
 │   │   │   └── auth.guard.ts       # Guard de autenticación
 │   │   ├── environments/
@@ -123,24 +151,88 @@ Polimarket/
 │   ├── index.html
 │   ├── main.ts
 │   └── styles.css
+├── proxy.conf.json             # ✅ Configuración proxy CORS
 ├── angular.json
 ├── package.json
 ├── tsconfig.json
+├── SERVICES_CHECKLIST.md       # ✅ Estado de integración de servicios
+├── BACKEND_INTEGRATION.md      # Documentación de integración
 └── README.md
 ```
 
-## 🔌 Conexión con el Backend
+## 🔌 Integración con APIs REST
 
-### Configuración
-La aplicación se conecta a una API REST de Ruby on Rails:
+### 📊 Estado de Integración
 
-- **URL Base**: `http://localhost:3000`
-- **Content-Type**: `application/json`
-- **Sin autenticación**: No requiere tokens JWT
+| Servicio | Estado | Funcionalidad |
+|----------|--------|---------------|
+| **RRHH API** | ✅ Completo | Crear, consultar y autorizar vendedores |
+| **Customers** | ✅ Completo | CRUD completo de clientes |
+| **Sales** | ⚠️ Parcial | Listado + filtrado por cliente (crear pendiente) |
+| **Products** | ✅ Integrado | Carga en módulo Ventas con actualización manual |
+| **Deliveries** | ⚠️ Pendiente | Servicio listo, UI pendiente |
+
+Ver detalles completos en `SERVICES_CHECKLIST.md`
+
+### Configuración de Backends
+
+#### Environment Variables (`src/environments/environment.ts`)
+```typescript
+export const environment = {
+  production: false,
+  apiUrl: 'https://ventas-al0w.onrender.com',
+  apiTimeout: 30000,
+  enableDebug: true
+};
+```
+
+#### Proxy CORS (`proxy.conf.json`)
+```json
+{
+  "/rrhh-api": {
+    "target": "https://akira.sedbaq.com.co",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/rrhh-api": "/rrhh"
+    }
+  }
+}
+```
 
 ### Endpoints Disponibles
 
-#### Clientes (`/customers`)
+#### 🌐 API RRHH (Externa - `https://akira.sedbaq.com.co/rrhh`)
+```typescript
+// Crear vendedor
+POST /rrhh-api/vendedor/crear
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "documento": "123456789",
+  "email": "juan@example.com",
+  "codigo_vendedor": "V001"
+}
+
+// Obtener vendedor por ID
+GET /rrhh-api/vendedor/:id
+
+// Autorizar vendedor
+POST /rrhh-api/vendedor/autorizar/:id
+
+// Crear administrador
+POST /rrhh-api/administrador/crear
+{
+  "nombre": "Admin",
+  "apellido": "Principal",
+  "documento": "987654321",
+  "email": "admin@example.com",
+  "cargo": "Gerente"
+}
+```
+
+#### 👥 Clientes (`/customers`) - Rails API
 ```typescript
 // Listar todos los clientes
 GET /customers
@@ -167,9 +259,12 @@ PATCH /customers/:id
     "name": "Juan Pérez Actualizado"
   }
 }
+
+// Eliminar cliente
+DELETE /customers/:id
 ```
 
-#### Productos (`/products`)
+#### 📦 Productos (`/products`) - Rails API
 ```typescript
 // Listar todos los productos
 GET /products
@@ -178,7 +273,7 @@ GET /products
 GET /products/:id
 ```
 
-#### Ventas (`/sales`)
+#### 💰 Ventas (`/sales`) - Rails API
 ```typescript
 // Listar todas las ventas
 GET /sales
@@ -223,137 +318,161 @@ POST /deliveries/:id/cancel
 
 ## 🎯 Ejemplos de Uso de Servicios
 
-### Ejemplo 1: Listar Clientes
+### Ejemplo 1: Gestión Completa de Clientes (Integrado con API)
 ```typescript
 import { Component, OnInit } from '@angular/core';
-import { CustomersService } from '../../services/customers.service';
+import { CustomersService, Customer } from '../../services/customers.service';
 
 export class ClientesComponent implements OnInit {
-  clientes: any[] = [];
+  clientes: Customer[] = [];
+  loading = false;
+  error = '';
 
   constructor(private customersService: CustomersService) {}
 
   ngOnInit() {
+    this.cargarClientes();
+  }
+
+  cargarClientes() {
+    this.loading = true;
     this.customersService.getCustomers().subscribe({
       next: (data) => {
         this.clientes = data;
-        console.log('Clientes cargados:', data);
+        this.loading = false;
+        console.log(`${data.length} clientes cargados desde API`);
       },
       error: (error) => {
         console.error('Error al cargar clientes:', error);
-        alert('Error al cargar clientes: ' + error.message);
+        this.error = error.message;
+        this.loading = false;
       }
     });
   }
-}
-```
 
-### Ejemplo 2: Crear una Venta
-```typescript
-import { Component } from '@angular/core';
-import { SalesService } from '../../services/sales.service';
-
-export class VentasComponent {
-  constructor(private salesService: SalesService) {}
-
-  crearVenta() {
-    const venta = {
-      sale: {
-        customer_id: 1,
-        seller_id: 1,
-        date: new Date().toISOString().split('T')[0],
-        comments: 'Venta de prueba',
-        sale_items_attributes: [
-          {
-            product_id: 1,
-            quantity: 2,
-            comment: '',
-            discount: 0
-          },
-          {
-            product_id: 2,
-            quantity: 1,
-            comment: 'Producto especial',
-            discount: 5
-          }
-        ]
-      }
+  crearCliente() {
+    const nuevoCliente: Omit<Customer, 'id' | 'created_at' | 'updated_at'> = {
+      identification: '123456789',
+      name: 'Juan Pérez',
+      email: 'juan@example.com',
+      address: 'Calle 123',
+      phone: '555-1234'
     };
 
-    this.salesService.createSale(venta).subscribe({
-      next: (response) => {
-        console.log('Venta creada exitosamente:', response);
-        alert('Venta #' + response.id + ' creada con éxito');
+    this.customersService.createCustomer(nuevoCliente).subscribe({
+      next: (cliente) => {
+        console.log('Cliente creado:', cliente);
+        this.cargarClientes(); // Recargar lista
       },
-      error: (error) => {
-        console.error('Error al crear venta:', error);
-        alert('Error: ' + error.message);
-      }
-    });
-  }
-}
-```
-
-### Ejemplo 3: Gestionar Entregas
-```typescript
-import { Component, OnInit } from '@angular/core';
-import { DeliveriesService } from '../../services/deliveries.service';
-
-export class EntregasComponent implements OnInit {
-  entregas: any[] = [];
-  entregasPendientes: any[] = [];
-
-  constructor(private deliveriesService: DeliveriesService) {}
-
-  ngOnInit() {
-    this.cargarEntregas();
-  }
-
-  cargarEntregas() {
-    this.deliveriesService.getDeliveries().subscribe({
-      next: (data) => {
-        this.entregas = data;
-        this.entregasPendientes = data.filter(e => e.delivery_status === 'pending');
-      },
-      error: (error) => console.error('Error:', error)
+      error: (error) => this.error = error.message
     });
   }
 
-  marcarEnProgreso(id: number) {
-    this.deliveriesService.markInProgress(id).subscribe({
-      next: (response) => {
-        console.log('Entrega actualizada:', response);
-        this.cargarEntregas();
-      },
-      error: (error) => alert('Error: ' + error.message)
-    });
-  }
-
-  confirmarEntrega(id: number) {
-    this.deliveriesService.confirmDelivery(id).subscribe({
-      next: (response) => {
-        console.log('Entrega confirmada:', response);
-        this.cargarEntregas();
-      },
-      error: (error) => alert('Error: ' + error.message)
-    });
-  }
-
-  cancelarEntrega(id: number) {
-    if (confirm('¿Está seguro de cancelar esta entrega?')) {
-      this.deliveriesService.cancelDelivery(id).subscribe({
+  eliminarCliente(id: number) {
+    if (confirm('¿Eliminar cliente?')) {
+      this.customersService.deleteCustomer(id).subscribe({
         next: () => {
-          alert('Entrega cancelada');
-          this.cargarEntregas();
+          console.log('Cliente eliminado');
+          this.cargarClientes(); // Recargar lista
         },
-        error: (error) => alert('Error: ' + error.message)
+        error: (error) => this.error = error.message
       });
     }
   }
 }
 ```
 
-### Ejemplo 4: Actualizar Cliente
+### Ejemplo 2: Listar Ventas desde Backend
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { SalesService } from '../../services/sales.service';
+
+export class VentasComponent implements OnInit {
+  ventas: any[] = [];
+  loading = false;
+
+  constructor(private salesService: SalesService) {}
+
+  ngOnInit() {
+    this.cargarVentas();
+  }
+
+  cargarVentas() {
+    this.loading = true;
+    
+    this.salesService.getSales().subscribe({
+      next: (ventas) => {
+        this.ventas = ventas;
+        this.loading = false;
+        console.log(`${ventas.length} ventas cargadas desde servidor`);
+      },
+      error: (error) => {
+        console.error('Error:', error);
+        this.loading = false;
+      }
+    });
+  }
+}
+```
+
+### Ejemplo 3: Integración completa con API RRHH Externa
+```typescript
+import { Component } from '@angular/core';
+import { RrhhApiService } from '../../services/rrhh-api.service';
+
+export class RecursosHumanosComponent {
+  vendedorConsultado: any = null;
+  loading = false;
+  error = '';
+
+  constructor(private rrhhService: RrhhApiService) {}
+
+  consultarVendedor(id: number) {
+    this.loading = true;
+    this.error = '';
+    
+    this.rrhhService.obtenerVendedor(id).subscribe({
+      next: (vendedor) => {
+        this.vendedorConsultado = vendedor;
+        this.loading = false;
+        console.log('Vendedor:', vendedor);
+      },
+      error: (error) => {
+        // Manejo personalizado de errores
+        if (error.status === 500) {
+          this.error = 'Vendedor no encontrado';
+        } else {
+          this.error = error.message;
+        }
+        this.loading = false;
+      }
+    });
+  }
+
+  autorizarVendedor(id: number) {
+    this.loading = true;
+    
+    this.rrhhService.autorizarVendedor(id).subscribe({
+      next: (response) => {
+        if (response.autorizado) {
+          // Actualizar estado local
+          if (this.vendedorConsultado && this.vendedorConsultado.id === id) {
+            this.vendedorConsultado.estado_autorizacion = true;
+          }
+          alert('Vendedor autorizado exitosamente');
+        }
+        this.loading = false;
+      },
+      error: (error) => {
+        this.error = error.message;
+        this.loading = false;
+      }
+    });
+  }
+}
+```
+
+### Ejemplo 4: Gestionar Entregas (Cuando esté integrado)
 ```typescript
 import { Component } from '@angular/core';
 import { CustomersService } from '../../services/customers.service';
