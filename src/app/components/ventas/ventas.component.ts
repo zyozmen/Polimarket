@@ -849,9 +849,6 @@ export class VentasComponent implements OnInit {
         const total = this.calcularTotal();
         this.mensaje = `¡Venta #${ventaCreada.id} procesada exitosamente! Total: ${this.formatearPrecio(total)}`;
         
-        // Recargar productos desde el backend para obtener el stock actualizado
-        this.cargarProductosDesdeBackend();
-        
         // Limpiar carrito
         this.carrito = [];
         this.clienteVenta = null;
@@ -860,8 +857,8 @@ export class VentasComponent implements OnInit {
         this.notasVenta = '';
         this.procesandoVenta = false;
         
-        // Recargar ventas desde el servidor
-        this.cargarVentasDesdeBackend();
+        // Recargar todos los datos desde el backend para obtener stock actualizado
+        this.cargarTodoEnParalelo();
         
         // Volver a clientes después de 2 segundos
         setTimeout(() => {
