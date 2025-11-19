@@ -44,7 +44,7 @@
         </button>
         <button class="btn btn-success" (click)="toggleFormVendedorApi()">
           <span class="icon">🌐</span>
-          {{ mostrarFormVendedorApi ? 'Cancelar' : 'Crear Vendedor (API)' }}
+          {{ mostrarFormVendedorApi ? 'Cancelar' : 'Crear Vendedor' }}
         </button>
       </div>
     </div>
@@ -177,8 +177,8 @@
 
     <!-- Formulario crear vendedor en API -->
     <div *ngIf="mostrarFormVendedorApi" class="form-card bg-light">
-      <h4>🌐 Crear Vendedor en API RRHH</h4>
-      <p class="text-muted">Crea un vendedor en el servidor: https://akira.sedbaq.com.co/rrhh</p>
+      <h4>🌐 Crear Vendedor RRHH</h4>
+      <p class="text-muted">Crea un vendedor</p>
       <form (ngSubmit)="crearVendedorApi()">
         <div class="form-row">
           <div class="form-group">

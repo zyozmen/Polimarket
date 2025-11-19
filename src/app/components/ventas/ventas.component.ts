@@ -158,42 +158,44 @@ export class VentasComponent implements OnInit {
           proveedor: 'N/A'
         }));
 
-        // Mapear ventas
-        this.ventas = ventas.map(venta => {
-          const cliente = this.clientes.find(c => c.id === venta.customer_id?.toString());
-          const items = (venta.sale_items || []).map(item => {
-            const producto = this.productos.find(p => p.id === item.product_id?.toString());
-            return {
-              producto: {
-                id: item.product_id?.toString() || '',
-                codigo: producto?.codigo || `PROD-${item.product_id}`,
-                nombre: producto?.nombre || `Producto #${item.product_id}`,
-                descripcion: producto?.descripcion || '',
-                precio: item.price || 0,
-                stock: producto?.stock || 0,
-                categoria: producto?.categoria || '',
-                proveedor: producto?.proveedor || ''
-              },
-              cantidad: item.quantity || 0,
-              subtotal: item.total_item || 0
-            };
-          });
+        // Mapear ventas y ordenar por ID descendente (más recientes primero)
+        this.ventas = ventas
+          .map(venta => {
+            const cliente = this.clientes.find(c => c.id === venta.customer_id?.toString());
+            const items = (venta.sale_items || []).map(item => {
+              const producto = this.productos.find(p => p.id === item.product_id?.toString());
+              return {
+                producto: {
+                  id: item.product_id?.toString() || '',
+                  codigo: producto?.codigo || `PROD-${item.product_id}`,
+                  nombre: producto?.nombre || `Producto #${item.product_id}`,
+                  descripcion: producto?.descripcion || '',
+                  precio: item.price || 0,
+                  stock: producto?.stock || 0,
+                  categoria: producto?.categoria || '',
+                  proveedor: producto?.proveedor || ''
+                },
+                cantidad: item.quantity || 0,
+                subtotal: item.total_item || 0
+              };
+            });
 
-          return {
-            id: venta.id?.toString() || '',
-            fecha: venta.date || '',
-            clienteId: venta.customer_id?.toString() || '',
-            clienteNombre: cliente?.nombre || `Cliente #${venta.customer_id}`,
-            items: items,
-            subtotal: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
-            descuento: 0,
-            impuesto: 0,
-            total: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
-            metodoPago: 'Efectivo',
-            estado: this.mapearEstadoEntrega(venta.delivery_status),
-            vendedor: `Vendedor #${venta.seller_id}`
-          };
-        });
+            return {
+              id: venta.id?.toString() || '',
+              fecha: venta.date || '',
+              clienteId: venta.customer_id?.toString() || '',
+              clienteNombre: cliente?.nombre || `Cliente #${venta.customer_id}`,
+              items: items,
+              subtotal: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
+              descuento: 0,
+              impuesto: 0,
+              total: typeof venta.total === 'string' ? parseFloat(venta.total) : (venta.total || 0),
+              metodoPago: 'Efectivo' as 'Efectivo' | 'Tarjeta' | 'Transferencia',
+              estado: this.mapearEstadoEntrega(venta.delivery_status),
+              vendedor: `Vendedor #${venta.seller_id}`
+            };
+          })
+          .sort((a, b) => parseInt(b.id) - parseInt(a.id));
 
         this.cargandoClientes = false;
         this.cargandoProductos = false;
