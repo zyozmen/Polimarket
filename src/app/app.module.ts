@@ -13,7 +13,10 @@ import { VentasComponent } from './components/ventas/ventas.component';
 import { ProveedoresComponent } from './components/proveedores/proveedores.component';
 import { EntregasComponent } from './components/entregas/entregas.component';
 
-// Servicio de login y usuarios (localStorage)
+// Servicios de autenticación
+import { AuthService } from './services/auth.service';
+import { EncryptionService } from './services/encryption.service';
+import { PasswordEncryptionService } from './services/password-encryption.service';
 import { RecursosHumanosService } from './services/recursos-humanos.service';
 
 // Servicios para la API de Rails (backend)
@@ -25,8 +28,11 @@ import { DeliveriesService } from './services/deliveries.service';
 // Servicio para la API de RRHH (akira.sedbaq.com.co)
 import { RrhhApiService } from './services/rrhh-api.service';
 
+// Guards
+import { AuthGuard } from './guards/auth.guard';
+
 // Interceptor HTTP
-import { HttpErrorInterceptor } from './interceptors/auth.interceptor';
+import { AuthInterceptor, HttpErrorInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [
@@ -47,8 +53,13 @@ import { HttpErrorInterceptor } from './interceptors/auth.interceptor';
     FormsModule
   ],
   providers: [
-    // Servicio de autenticación y usuarios (localStorage)
+    // Servicios de autenticación
+    AuthService,
+    EncryptionService,
+    PasswordEncryptionService,
     RecursosHumanosService,
+    // Guards
+    AuthGuard,
     // Servicios REST para backend Rails
     CustomersService,
     ProductsService,
@@ -56,9 +67,10 @@ import { HttpErrorInterceptor } from './interceptors/auth.interceptor';
     DeliveriesService,
     // Servicio REST para API RRHH
     RrhhApiService,
+    // Interceptor principal para JWT
     {
       provide: HTTP_INTERCEPTORS,
-      useClass: HttpErrorInterceptor,
+      useClass: AuthInterceptor,
       multi: true
     }
   ],

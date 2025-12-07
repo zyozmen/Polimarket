@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { RecursosHumanosService } from './services/recursos-humanos.service';
+import { AuthService } from './services/auth.service';
 import { Sistema } from './models/vendedor.model';
 
 @Component({
@@ -15,14 +15,15 @@ export class AppComponent implements OnInit {
   menuAbierto = false; // Control del menú responsive
 
   constructor(
-    public rrhhService: RecursosHumanosService,
+    public authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     // Suscribirse a cambios en los permisos
-    this.rrhhService.permisos$.subscribe(permisos => {
+    this.authService.permisos$.subscribe(permisos => {
       this.permisos = permisos;
+      console.log('Permisos actualizados en AppComponent:', permisos);
     });
   }
 
@@ -39,9 +40,19 @@ export class AppComponent implements OnInit {
   }
 
   logout(): void {
-    this.rrhhService.logout();
-    this.router.navigate(['/login']);
-    this.cerrarMenu();
+    this.authService.logout().subscribe({
+      next: () => {
+        console.log('Logout exitoso');
+        this.router.navigate(['/login']);
+        this.cerrarMenu();
+      },
+      error: (err) => {
+        console.error('Error en logout:', err);
+        // Aunque falle, redirigir al login
+        this.router.navigate(['/login']);
+        this.cerrarMenu();
+      }
+    });
   }
 
   isLoginPage(): boolean {

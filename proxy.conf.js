@@ -14,6 +14,12 @@ const PROXY_CONFIG = {
     "pathRewrite": {
       "^/rrhh-api": "/rrhh"
     }
+  },
+  "/api/auth": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 };
 

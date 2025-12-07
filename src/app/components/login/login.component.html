@@ -8,13 +8,19 @@
             <p class="text-muted">Iniciar Sesión</p>
           </div>
 
+          <!-- Mensaje de éxito -->
+          <div *ngIf="mensajeExito" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>{{ mensajeExito }}
+            <button type="button" class="btn-close" (click)="mensajeExito = ''" aria-label="Close"></button>
+          </div>
+
           <!-- Mensaje de error -->
           <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ error }}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
             <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
           </div>
 
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <form [formGroup]="loginForm">
             <div class="mb-3">
               <label for="usuario" class="form-label">Usuario</label>
               <input 
@@ -46,9 +52,10 @@
             </div>
 
             <button 
-              type="submit" 
+              type="button" 
               class="btn btn-primary w-100"
-              [disabled]="loading || loginForm.invalid">
+              [disabled]="loading"
+              (click)="onSubmit()">
               <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
               {{ loading ? 'Iniciando sesión...' : 'Ingresar' }}
             </button>
