@@ -51,16 +51,34 @@ export class AuthService {
   ) {
     // Recuperar perfil guardado en localStorage si existe
     const perfilGuardado = localStorage.getItem('perfil');
-    this.currentUserSubject = new BehaviorSubject<PerfilEmpleado | null>(
-      perfilGuardado ? JSON.parse(perfilGuardado) : null
-    );
+    let perfil: PerfilEmpleado | null = null;
+    
+    if (perfilGuardado && perfilGuardado !== 'undefined' && perfilGuardado !== 'null') {
+      try {
+        perfil = JSON.parse(perfilGuardado);
+      } catch (e) {
+        console.error('Error parsing perfil from localStorage:', e);
+        localStorage.removeItem('perfil');
+      }
+    }
+    
+    this.currentUserSubject = new BehaviorSubject<PerfilEmpleado | null>(perfil);
     this.currentUser$ = this.currentUserSubject.asObservable();
 
     // Inicializar permisos desde localStorage
     const permisosGuardados = localStorage.getItem('permisos');
-    this.permisosSubject = new BehaviorSubject<Sistema[]>(
-      permisosGuardados ? JSON.parse(permisosGuardados) : []
-    );
+    let permisos: Sistema[] = [];
+    
+    if (permisosGuardados && permisosGuardados !== 'undefined' && permisosGuardados !== 'null') {
+      try {
+        permisos = JSON.parse(permisosGuardados);
+      } catch (e) {
+        console.error('Error parsing permisos from localStorage:', e);
+        localStorage.removeItem('permisos');
+      }
+    }
+    
+    this.permisosSubject = new BehaviorSubject<Sistema[]>(permisos);
     this.permisos$ = this.permisosSubject.asObservable();
   }
 
@@ -113,6 +131,13 @@ export class AuthService {
   login(usuario: string, password: string): Observable<LoginResponse> {
     // Cifrar la contraseña con el servicio compatible con Spring Boot
     const passwordCifrado = this.passwordEncryption.encrypt(password);
+    
+    // Log para debug (eliminar en producción)
+    console.log('🔐 Login attempt:', { 
+      usuario, 
+      passwordOriginal: password, 
+      passwordCifrado 
+    });
 
     const request: LoginRequest = {
       usuario: usuario,
@@ -132,14 +157,14 @@ export class AuthService {
           // Guardar token, fecha de expiración y perfil en localStorage
           localStorage.setItem('token', response.token);
           localStorage.setItem('expiracion', response.expiracion);
-          localStorage.setItem('perfil', JSON.stringify(response.perfil));
+          localStorage.setItem('perfil', JSON.stringify(response.empleado));
           
           // Mapear roles a sistemas/módulos
-          const sistemas = this.mapearRolesASistemas(response.perfil.roles);
+          const sistemas = this.mapearRolesASistemas(response.empleado.roles);
           localStorage.setItem('permisos', JSON.stringify(sistemas));
           
           // Notificar cambios
-          this.currentUserSubject.next(response.perfil);
+          this.currentUserSubject.next(response.empleado);
           this.permisosSubject.next(sistemas);
         }),
         catchError(this.handleAuthError)
@@ -361,12 +386,29 @@ export class AuthService {
    */
   private handleAuthError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Error en la autenticación';
+    let errorDetails = '';
     
     if (error.error instanceof ErrorEvent) {
       // Error del lado del cliente
       errorMessage = `Error de red: ${error.error.message}`;
+    } else if (error.error && typeof error.error === 'object') {
+      // Error del backend con estructura personalizada
+      const backendError = error.error;
+      
+      // El backend devuelve: { codigo, mensaje, detalles, timestamp }
+      if (backendError.mensaje) {
+        errorMessage = backendError.mensaje;
+      }
+      
+      if (backendError.detalles) {
+        errorDetails = backendError.detalles;
+        // Usar detalles como mensaje principal si es más descriptivo
+        if (errorDetails && errorDetails.length > errorMessage.length) {
+          errorMessage = errorDetails;
+        }
+      }
     } else {
-      // Error del lado del servidor
+      // Fallback a mensajes por código de estado
       switch (error.status) {
         case 400:
           errorMessage = 'Datos inválidos. Verifique usuario y contraseña.';
@@ -381,16 +423,18 @@ export class AuthService {
           errorMessage = 'Error interno del servidor. Intente más tarde.';
           break;
         default:
-          errorMessage = error.error?.message || `Error código: ${error.status}`;
+          errorMessage = `Error código: ${error.status}`;
       }
     }
     
     const customError: AuthErrorResponse = {
       status: error.status,
       message: errorMessage,
+      details: errorDetails,
       timestamp: new Date().toISOString()
     };
 
+    console.error('Auth error:', customError);
     return throwError(() => customError);
   }
 

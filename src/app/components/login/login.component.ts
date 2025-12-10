@@ -90,11 +90,11 @@ export class LoginComponent implements OnInit {
         this.loading = false;
         
         // Mostrar mensaje de éxito temporal
-        this.mensajeExito = `¡Bienvenido ${response.perfil.nombre} ${response.perfil.apellido}!`;
+        this.mensajeExito = `¡Bienvenido ${response.empleado.nombre} ${response.empleado.apellido}!`;
         
         // Redirigir después de 500ms
         setTimeout(() => {
-          this.redirectAfterLogin(response.perfil.roles);
+          this.redirectAfterLogin(response.empleado.roles);
         }, 500);
       },
       error: (err: AuthErrorResponse) => {
@@ -164,6 +164,17 @@ export class LoginComponent implements OnInit {
    * @returns Mensaje de error formateado para el usuario
    */
   private getErrorMessage(err: any): string {
+    // Priorizar los detalles específicos del backend
+    if (err.details && err.details.trim().length > 0) {
+      return err.details;
+    }
+    
+    // Si no hay detalles, usar el mensaje general
+    if (err.message) {
+      return err.message;
+    }
+    
+    // Fallback a mensajes por código de estado
     if (err.status === 400) {
       return 'Usuario o contraseña inválidos. Verifique los datos ingresados.';
     } else if (err.status === 401) {
@@ -172,8 +183,6 @@ export class LoginComponent implements OnInit {
       return 'Servicio de autenticación no disponible. Intente más tarde.';
     } else if (err.status === 500) {
       return 'Error del servidor. Por favor, intente nuevamente más tarde.';
-    } else if (err.message) {
-      return err.message;
     }
     
     return 'Error al iniciar sesión. Verifique su conexión e intente nuevamente.';

@@ -7,6 +7,7 @@
  * Tipos de identificación permitidos
  */
 export enum TipoIdentificacion {
+  CC = 'CC',
   CEDULA = 'CEDULA',
   PASAPORTE = 'PASAPORTE',
   RUC = 'RUC'
@@ -77,11 +78,25 @@ export interface LoginResponse {
   /** Fecha de expiración del token en formato ISO 8601 */
   expiracion: string;
   /** Perfil completo del empleado autenticado */
-  perfil: PerfilEmpleado;
+  empleado: PerfilEmpleado;
 }
 
 /**
- * Response de error de autenticación
+ * Response de error de autenticación del backend
+ */
+export interface BackendErrorResponse {
+  /** Código de estado HTTP */
+  codigo: number;
+  /** Mensaje de error principal */
+  mensaje: string;
+  /** Detalles adicionales del error */
+  detalles: string;
+  /** Timestamp del error */
+  timestamp: number;
+}
+
+/**
+ * Response de error de autenticación (normalizado para el frontend)
  */
 export interface AuthErrorResponse {
   /** Código de estado HTTP */
@@ -91,7 +106,7 @@ export interface AuthErrorResponse {
   /** Timestamp del error */
   timestamp?: string;
   /** Detalles adicionales del error */
-  details?: string[];
+  details?: string;
 }
 
 /**
