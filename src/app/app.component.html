@@ -30,6 +30,14 @@
         <span class="icon">💰</span>
         <span>Ventas</span>
       </a>
+      <a *ngIf="tieneAcceso(Sistema.VENTAS)"
+        routerLink="/pagos"
+        routerLinkActive="active"
+        class="nav-item"
+        (click)="cerrarMenu()">
+        <span class="icon">💳</span>
+        <span>Pagos</span>
+      </a>
       <a *ngIf="tieneAcceso(Sistema.RECURSOS_HUMANOS)" 
          routerLink="/recursos-humanos" 
          routerLinkActive="active" 

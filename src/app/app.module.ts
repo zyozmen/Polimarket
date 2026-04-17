@@ -12,6 +12,7 @@ import { BodegaComponent } from './components/bodega/bodega.component';
 import { VentasComponent } from './components/ventas/ventas.component';
 import { ProveedoresComponent } from './components/proveedores/proveedores.component';
 import { EntregasComponent } from './components/entregas/entregas.component';
+import { PagosComponent } from './components/pagos/pagos.component';
 
 // Servicio de login y usuarios (localStorage)
 import { RecursosHumanosService } from './services/recursos-humanos.service';
@@ -36,7 +37,8 @@ import { HttpErrorInterceptor } from './interceptors/auth.interceptor';
     BodegaComponent,
     VentasComponent,
     ProveedoresComponent,
-    EntregasComponent
+    EntregasComponent,
+    PagosComponent
   ],
   imports: [
     BrowserModule,

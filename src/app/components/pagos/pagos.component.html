@@ -1,0 +1,139 @@
+<div class="pagos-container">
+  <div class="module-header">
+    <h2>Pagos</h2>
+    <p>Integracion inicial de checkout con PayU (sandbox).</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+    <button type="button" class="btn-close" (click)="success = ''"></button>
+  </div>
+
+  <div class="layout-grid">
+    <section class="card-panel">
+      <h3>Crear transaccion</h3>
+
+      <form [formGroup]="paymentForm" (ngSubmit)="submitPayment()" class="form-grid">
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="reference">Referencia</label>
+            <div class="inline-input-action">
+              <input id="reference" class="form-control" formControlName="reference" />
+              <button type="button" class="btn btn-secondary btn-sm" (click)="regenerateReference()">Nueva</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="transactionType">Tipo de transaccion</label>
+            <select id="transactionType" class="form-control" formControlName="transactionType">
+              <option *ngFor="let option of transactionTypes" [value]="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descripcion</label>
+          <input id="description" class="form-control" formControlName="description" />
+        </div>
+
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="amount">Monto</label>
+            <input id="amount" type="number" class="form-control" formControlName="amount" />
+          </div>
+
+          <div class="form-group">
+            <label for="currency">Moneda</label>
+            <select id="currency" class="form-control" formControlName="currency">
+              <option value="COP">COP</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+        </div>
+
+        <h4>Datos del pagador</h4>
+
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="fullName">Nombre completo</label>
+            <input id="fullName" class="form-control" formControlName="fullName" />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input id="email" class="form-control" formControlName="email" />
+          </div>
+        </div>
+
+        <div class="form-row two-cols">
+          <div class="form-group">
+            <label for="document">Documento</label>
+            <input id="document" class="form-control" formControlName="document" />
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Telefono</label>
+            <input id="phone" class="form-control" formControlName="phone" />
+          </div>
+        </div>
+
+        <h4>URLs de integracion</h4>
+
+        <div class="form-group">
+          <label for="returnUrl">URL de retorno (frontend)</label>
+          <input id="returnUrl" class="form-control" formControlName="returnUrl" />
+        </div>
+
+        <div class="form-group">
+          <label for="confirmationUrl">URL de confirmacion (backend webhook)</label>
+          <input id="confirmationUrl" class="form-control" formControlName="confirmationUrl" />
+        </div>
+
+        <button class="btn btn-primary" type="submit" [disabled]="loading || paymentForm.invalid">
+          {{ loading ? 'Creando checkout...' : 'Crear checkout PayU' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="card-panel">
+      <h3>Respuesta de checkout</h3>
+
+      <div *ngIf="checkoutResponse; else noResponse" class="response-card">
+        <p><strong>Referencia:</strong> {{ checkoutResponse.reference }}</p>
+        <p><strong>Estado:</strong> {{ checkoutResponse.status }}</p>
+        <p><strong>Mensaje:</strong> {{ checkoutResponse.message || 'Sin mensaje' }}</p>
+
+        <button
+          *ngIf="checkoutResponse.redirectUrl"
+          type="button"
+          class="btn btn-success"
+          (click)="openCheckout()">
+          Abrir checkout
+        </button>
+      </div>
+
+      <ng-template #noResponse>
+        <p class="muted">Aun no se ha generado una sesion de checkout.</p>
+      </ng-template>
+
+      <h3 class="top-space">Contrato esperado del backend</h3>
+      <div class="contract-block">
+        <p><strong>POST:</strong> {{ backendContract.checkoutEndpoint }}</p>
+        <p><strong>GET:</strong> {{ backendContract.statusEndpoint }}</p>
+      </div>
+
+      <h4>Ejemplo de payload</h4>
+      <pre>{{ backendContract.payloadExample | json }}</pre>
+
+      <h4>Ejemplo de respuesta</h4>
+      <pre>{{ backendContract.responseExample | json }}</pre>
+    </section>
+  </div>
+</div>

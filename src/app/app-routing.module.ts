@@ -6,12 +6,15 @@ import { BodegaComponent } from './components/bodega/bodega.component';
 import { VentasComponent } from './components/ventas/ventas.component';
 import { ProveedoresComponent } from './components/proveedores/proveedores.component';
 import { EntregasComponent } from './components/entregas/entregas.component';
+import { PagosComponent } from './components/pagos/pagos.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'bodega', component: BodegaComponent },
   { path: 'ventas', component: VentasComponent },
+  { path: 'pagos', component: PagosComponent },
+  { path: 'pagos/resultado', component: PagosComponent },
   { path: 'recursos-humanos', component: VendedorListComponent },
   { path: 'vendedores', redirectTo: '/recursos-humanos', pathMatch: 'full' },
   { path: 'proveedores', component: ProveedoresComponent },
